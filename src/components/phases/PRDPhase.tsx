@@ -264,7 +264,22 @@ export function PRDPhase({ journey, onComplete }: PRDPhaseProps) {
       
       if (journey.brand?.name) {
         contextParts.push(`Product Name: ${journey.brand.name}`)
+        contextParts.push(`Tagline: ${journey.brand.tagline}`)
       }
+
+      const personalityContext = journey.brand?.personality ? `
+Brand Personality Profile:
+- Archetype: ${journey.brand.personality.archetype}
+- Tone: ${journey.brand.personality.tone.join(', ')}
+- Core Values: ${journey.brand.personality.values.join(', ')}
+- Target Feeling: ${journey.brand.personality.targetFeeling}
+- Style Direction: ${journey.brand.personality.styleDirection}
+
+Use this personality to guide the writing tone and emphasis. Match the ${journey.brand.personality.archetype} archetype and ${journey.brand.personality.tone.join('/')} tone throughout the content. Emphasize the values of ${journey.brand.personality.values.join(', ')}.` : ''
+
+      const toneGuidance = journey.brand?.personality 
+        ? `Write in a ${journey.brand.personality.tone.join(', ')} tone that reflects the ${journey.brand.personality.archetype} brand archetype. The content should make readers feel ${journey.brand.personality.targetFeeling}.`
+        : 'Write in a professional, clear tone suitable for healthcare stakeholders.'
 
       const existingContent = sections[section].content.trim()
       const prompt = window.spark.llmPrompt`You are a healthcare product strategist writing a PRD section.
@@ -274,14 +289,16 @@ Description: ${config.description}
 
 Context from the startup journey:
 ${contextParts.join('\n')}
+${personalityContext}
 
-${existingContent ? `Current draft:\n${existingContent}\n\nImprove and expand the above draft.` : `Create content for this section using the following template as a guide:\n${config.template}`}
+${existingContent ? `Current draft:\n${existingContent}\n\nImprove and expand the above draft while maintaining the brand personality and tone.` : `Create content for this section using the following template as a guide:\n${config.template}`}
 
 Guidelines:
 - Be specific to healthcare context
 - Use concrete examples and data points
 - Focus on clinical value and patient outcomes
 - ${config.helpText}
+- ${toneGuidance}
 - Write in markdown format
 - Be comprehensive but concise (300-500 words)
 
@@ -289,7 +306,7 @@ Return only the section content, no JSON.`
       
       const content = await window.spark.llm(prompt, 'gpt-4o')
       handleContentChange(section, content.trim())
-      toast.success('Content generated successfully!')
+      toast.success('Content generated with your brand personality!')
     } catch (error) {
       toast.error('Failed to generate content. Please try again.')
       console.error(error)
@@ -299,10 +316,86 @@ Return only the section content, no JSON.`
   }
 
   const handleUseTemplate = (section: SectionKey) => {
-    const template = SECTION_CONFIG[section].template
+    let template = SECTION_CONFIG[section].template
+    
+    if (journey.brand?.personality) {
+      const personality = journey.brand.personality
+      const archetype = personality.archetype.toLowerCase()
+      
+      if (archetype.includes('caregiver') && section === 'problem') {
+        template = `# Problem Statement
+
+## The Human Impact
+[Describe how patients and caregivers are affected emotionally and physically]
+
+## Current Challenges
+- [Pain point affecting quality of care]
+- [Burden on caregivers or patients]
+- [Gaps in support and compassion]
+
+## Real Stories
+[Share a brief narrative or scenario showing the problem's impact]
+
+## Why This Matters
+[Connect to core values of empathy, care, and patient wellbeing]`
+      } else if (archetype.includes('innovator') && section === 'solution') {
+        template = `# Proposed Solution
+
+## Revolutionary Approach
+[Describe your breakthrough innovation and technology]
+
+## How It Works
+1. [Cutting-edge mechanism or methodology]
+2. [Novel application of technology]
+3. [Transformative outcome]
+
+## Innovation Edge
+- [Unique technological advantage]
+- [First-to-market capabilities]
+- [Future-forward features]
+
+## Impact Metrics
+[Quantifiable improvements and breakthrough results]`
+      } else if (archetype.includes('hero') && section === 'problem') {
+        template = `# Problem Statement
+
+## The Crisis
+[Define the urgent healthcare challenge that needs immediate action]
+
+## Lives at Stake
+- [Critical impact on patient outcomes]
+- [Systemic failures causing harm]
+- [Preventable tragedies]
+
+## Current State of Affairs
+[Present data showing the severity and urgency]
+
+## Our Mission
+[Bold statement about tackling this challenge head-on]`
+      } else if (archetype.includes('sage') && section === 'solution') {
+        template = `# Proposed Solution
+
+## Evidence-Based Approach
+[Describe solution grounded in research and clinical expertise]
+
+## Methodology
+1. [Research-backed process]
+2. [Clinical validation approach]
+3. [Knowledge-driven outcomes]
+
+## Scientific Foundation
+- [Research supporting the approach]
+- [Expert consultation and validation]
+- [Data-driven decision making]
+
+## Educational Value
+[How solution empowers users with knowledge and understanding]`
+      }
+    }
+    
     handleContentChange(section, template)
     setShowTemplate(false)
-    toast.success('Template added! Customize it to fit your product.')
+    toast.success('Personality-tailored template added!')
   }
 
   const handleChecklistToggle = (id: string) => {
@@ -351,6 +444,38 @@ Return only the section content, no JSON.`
           Build your product requirements document section by section
         </p>
       </div>
+
+      {journey.brand?.personality && (
+        <Card className="bg-accent/10 border-accent/30">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-lg bg-accent/20 flex items-center justify-center flex-shrink-0">
+                <Sparkle className="w-6 h-6 text-accent" weight="fill" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg mb-2">
+                  Writing with {journey.brand.personality.archetype} Personality
+                </h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  AI-generated content will match your brand tone and values
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {journey.brand.personality.tone.map((t) => (
+                    <Badge key={t} variant="secondary" className="capitalize text-xs">
+                      {t}
+                    </Badge>
+                  ))}
+                  {journey.brand.personality.values.map((v) => (
+                    <Badge key={v} variant="outline" className="capitalize text-xs">
+                      {v}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="bg-gradient-to-r from-primary/5 to-accent/5">
         <CardContent className="pt-6">
