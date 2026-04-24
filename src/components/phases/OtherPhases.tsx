@@ -998,10 +998,23 @@ Return a JSON object with a single property "taglines" containing an array of ex
 
 
 export function CodePhase({ journey, onComplete }: CompletionPhaseProps) {
-  const [step, setStep] = useState<'template' | 'generating' | 'preview'>('template')
+  const [step, setStep] = useState<'template' | 'customize' | 'generating' | 'preview' | 'enhance'>('template')
   const [selectedTemplate, setSelectedTemplate] = useState<'landing' | 'webapp' | 'dashboard'>('landing')
   const [generatedCode, setGeneratedCode] = useState<GeneratedCode | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [customizations, setCustomizations] = useState({
+    includeAuth: false,
+    includeForms: true,
+    includeCharts: false,
+    includeAccessibility: true,
+    includeAnimations: true
+  })
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([])
+  const [aiInsights, setAiInsights] = useState<{
+    recommendations: string[]
+    technicalConsiderations: string[]
+    securityNotes: string[]
+  } | null>(null)
 
   useEffect(() => {
     if (journey.code) {
@@ -1017,23 +1030,67 @@ export function CodePhase({ journey, onComplete }: CompletionPhaseProps) {
       name: 'Landing Page',
       description: 'Single-page marketing site with hero, features, and CTA sections',
       icon: '🌐',
-      bestFor: 'Patient-facing products, B2C healthcare services'
+      bestFor: 'Patient-facing products, B2C healthcare services',
+      features: ['Hero section with value proposition', 'Feature showcase grid', 'Patient testimonials', 'CTA forms', 'FAQ section']
     },
     {
       type: 'webapp' as const,
       name: 'Web Application',
       description: 'Multi-page app with navigation, forms, and interactive features',
       icon: '⚡',
-      bestFor: 'Patient portals, telemedicine platforms, health tracking'
+      bestFor: 'Patient portals, telemedicine platforms, health tracking',
+      features: ['User authentication', 'Patient dashboard', 'Appointment booking', 'Health records view', 'Messaging system']
     },
     {
       type: 'dashboard' as const,
       name: 'Admin Dashboard',
       description: 'Data-rich interface with charts, tables, and management tools',
       icon: '📊',
-      bestFor: 'Provider tools, analytics platforms, practice management'
+      bestFor: 'Provider tools, analytics platforms, practice management',
+      features: ['Analytics overview', 'Patient management table', 'Appointment calendar', 'Health metrics charts', 'Report generation']
     }
   ]
+
+  const analyzeRequirements = async () => {
+    if (!journey.prd || !journey.brand) return
+
+    setIsGenerating(true)
+    try {
+      const prompt = window.spark.llmPrompt`You are a healthcare tech architect. Analyze this PRD and provide intelligent code generation recommendations:
+
+Brand: ${journey.brand.name}
+Brand Personality: ${journey.brand.personality ? `${journey.brand.personality.archetype} - ${journey.brand.personality.tone.join(', ')}` : 'Not specified'}
+
+PRD Problem: ${journey.prd.sections.problem.content.slice(0, 500)}
+PRD Solution: ${journey.prd.sections.solution.content.slice(0, 500)}
+PRD Features: ${journey.prd.sections.features.content.slice(0, 500)}
+PRD Target Users: ${journey.prd.sections.targetUsers.content.slice(0, 300)}
+PRD Regulatory: ${journey.prd.sections.regulatory.content.slice(0, 400)}
+
+Template Type: ${selectedTemplate}
+
+Generate a JSON object with:
+- recommendations: Array of 3-4 specific technical recommendations for this product (e.g., "Implement end-to-end encryption for messaging", "Use chart.js for patient vitals visualization")
+- technicalConsiderations: Array of 3 technical decisions needed (frameworks, APIs, data handling approaches)
+- securityNotes: Array of 2-3 critical security/compliance considerations for implementation
+
+Be specific to this healthcare context and template type.`
+
+      const response = await window.spark.llm(prompt, 'gpt-4o-mini', true)
+      const insights = JSON.parse(response)
+      setAiInsights(insights)
+    } catch (error) {
+      console.error('Failed to analyze requirements:', error)
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  useEffect(() => {
+    if (step === 'customize' && !aiInsights) {
+      analyzeRequirements()
+    }
+  }, [step])
 
   const generateCode = async () => {
     if (!journey.prd || !journey.brand) {
@@ -1046,28 +1103,86 @@ export function CodePhase({ journey, onComplete }: CompletionPhaseProps) {
 
     try {
       const templateInfo = templates.find(t => t.type === selectedTemplate)
+      const personalityContext = journey.brand.personality ? `
+Brand Personality:
+- Archetype: ${journey.brand.personality.archetype}
+- Tone: ${journey.brand.personality.tone.join(', ')}
+- Values: ${journey.brand.personality.values.join(', ')}
+- Target Feeling: ${journey.brand.personality.targetFeeling}
+- Visual Style: ${journey.brand.personality.styleDirection}
+
+Design the UI to reflect this personality. Use ${journey.brand.personality.styleDirection} styling. The interface should make users feel ${journey.brand.personality.targetFeeling}.` : ''
+
+      const featuresContext = selectedFeatures.length > 0 ? `
+Priority Features to Implement:
+${selectedFeatures.map(f => `- ${f}`).join('\n')}` : ''
+
+      const customizationContext = `
+Customization Options:
+- Include authentication UI: ${customizations.includeAuth ? 'Yes' : 'No'}
+- Include form validation: ${customizations.includeForms ? 'Yes' : 'No'}
+- Include data visualizations: ${customizations.includeCharts ? 'Yes' : 'No'}
+- WCAG accessibility features: ${customizations.includeAccessibility ? 'Yes' : 'No'}
+- Micro-interactions and animations: ${customizations.includeAnimations ? 'Yes' : 'No'}`
+
+      const aiInsightsContext = aiInsights ? `
+AI Architecture Recommendations:
+${aiInsights.recommendations.map(r => `- ${r}`).join('\n')}
+
+Security Considerations:
+${aiInsights.securityNotes.map(n => `- ${n}`).join('\n')}` : ''
       
-      const prompt = window.spark.llmPrompt`You are an expert healthcare web developer. Generate a complete code structure for a ${selectedTemplate} based on this information:
+      const prompt = window.spark.llmPrompt`You are an expert healthcare web developer. Generate a complete, production-quality code structure for a ${selectedTemplate}.
 
-Brand Name: ${journey.brand.name}
+BRAND INFORMATION:
+Name: ${journey.brand.name}
 Tagline: ${journey.brand.tagline}
-Problem: ${journey.prd.sections.problem.content}
-Solution: ${journey.prd.sections.solution.content}
-Target Users: ${journey.prd.sections.targetUsers.content}
-Key Features: ${journey.prd.sections.features.content}
+Primary Color: ${journey.brand.colors.primary}
+Secondary Color: ${journey.brand.colors.secondary}
+Accent Color: ${journey.brand.colors.accent}
+${personalityContext}
 
-Generate a JSON object with a "files" property containing an array of file objects. Each file should have:
+PRODUCT CONTEXT:
+Problem: ${journey.prd.sections.problem.content.slice(0, 600)}
+
+Solution: ${journey.prd.sections.solution.content.slice(0, 600)}
+
+Target Users: ${journey.prd.sections.targetUsers.content.slice(0, 400)}
+
+Key Features from PRD: ${journey.prd.sections.features.content.slice(0, 800)}
+${featuresContext}
+
+Regulatory Notes: ${journey.prd.sections.regulatory.content.slice(0, 400)}
+${customizationContext}
+${aiInsightsContext}
+
+REQUIREMENTS:
+Generate a JSON object with a "files" property containing an array of file objects. Each file must have:
 - path: relative file path (e.g., "index.html", "app.js", "styles.css")
-- content: complete file content
+- content: complete, production-ready file content
 
 Create a ${templateInfo?.name} with:
-- Modern, clean healthcare design
-- Responsive layout
-- ${selectedTemplate === 'landing' ? 'Hero section, features grid, testimonials, and CTA' : selectedTemplate === 'webapp' ? 'Navigation, dashboard view, forms, and user profile' : 'Sidebar navigation, data visualizations, tables, and filters'}
-- Brand colors integrated
-- Accessible HTML structure
+1. Modern, accessible HTML5 structure
+2. ${selectedTemplate === 'landing' ? 'Hero section with compelling value prop, features grid (minimum 3 features from PRD), social proof/testimonials section, and prominent CTA' : selectedTemplate === 'webapp' ? 'Navigation header, main dashboard view showing key user data, interactive forms for primary actions, user profile section' : 'Sidebar navigation with key admin sections, analytics overview dashboard with KPI cards, data table for management, and filter/search capabilities'}
+3. CSS styling that matches the brand colors and personality
+4. Responsive design (mobile-first approach)
+5. ${customizations.includeAccessibility ? 'Full WCAG 2.1 AA compliance (semantic HTML, ARIA labels, keyboard navigation, focus indicators)' : 'Basic accessibility'}
+6. ${customizations.includeAnimations ? 'Smooth transitions and micro-interactions using CSS animations' : 'Minimal animations'}
+7. ${customizations.includeAuth ? 'Login/signup UI components' : 'Public-facing UI'}
+8. ${customizations.includeForms ? 'Form validation UI with error states' : 'Basic forms'}
+9. ${customizations.includeCharts ? 'Data visualization components (use Chart.js or similar library)' : 'Static data displays'}
+10. Healthcare-appropriate imagery placeholders and medical iconography
+11. HIPAA-conscious design patterns (privacy, security indicators)
+12. Clear CTAs that align with solution value proposition
 
-Include 3-5 files (HTML, CSS, JS as needed). Make the code production-ready and well-commented.`
+Include 4-6 files (HTML, CSS, JavaScript as needed). Code should be:
+- Well-commented explaining key sections
+- Production-ready with proper error handling
+- Optimized for performance
+- Following modern best practices
+- Healthcare industry appropriate
+
+Make the code immediately usable as an MVP foundation.`
 
       const response = await window.spark.llm(prompt, 'gpt-4o', true)
       const result = JSON.parse(response)
@@ -1085,7 +1200,54 @@ Include 3-5 files (HTML, CSS, JS as needed). Make the code production-ready and 
     } catch (error) {
       toast.error('Failed to generate code. Please try again.')
       console.error(error)
-      setStep('template')
+      setStep('customize')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const enhanceCode = async (enhancement: string) => {
+    if (!generatedCode) return
+
+    setIsGenerating(true)
+    try {
+      const prompt = window.spark.llmPrompt`You are enhancing existing healthcare web code. 
+
+Current code files:
+${generatedCode.files.map(f => `${f.path}:\n${f.content.slice(0, 500)}`).join('\n\n')}
+
+Enhancement request: ${enhancement}
+
+Brand: ${journey.brand?.name || 'Not specified'}
+Personality: ${journey.brand?.personality ? `${journey.brand.personality.archetype} - ${journey.brand.personality.tone.join(', ')}` : 'Not specified'}
+
+Generate a JSON object with a "files" property containing an array of file objects with updated content that implements the enhancement. Include only the files that need to change. Each file must have:
+- path: relative file path
+- content: complete enhanced file content
+
+Make sure the enhancement is production-ready and well-integrated.`
+
+      const response = await window.spark.llm(prompt, 'gpt-4o', true)
+      const result = JSON.parse(response)
+
+      const updatedFiles = generatedCode.files.map(existingFile => {
+        const enhancedFile = result.files.find((f: any) => f.path === existingFile.path)
+        return enhancedFile || existingFile
+      })
+
+      const newFiles = result.files.filter((f: any) => 
+        !generatedCode.files.some(existing => existing.path === f.path)
+      )
+
+      setGeneratedCode({
+        ...generatedCode,
+        files: [...updatedFiles, ...newFiles]
+      })
+
+      toast.success('Code enhanced successfully!')
+    } catch (error) {
+      toast.error('Failed to enhance code. Please try again.')
+      console.error(error)
     } finally {
       setIsGenerating(false)
     }
@@ -1107,12 +1269,39 @@ Include 3-5 files (HTML, CSS, JS as needed). Make the code production-ready and 
     toast.success('Code phase complete! 💻')
   }
 
+  const extractedFeatures = journey.prd?.sections.features.content
+    .split('\n')
+    .filter(line => line.trim().startsWith('-') || line.trim().startsWith('*') || line.match(/^\d+\./))
+    .map(line => line.replace(/^[-*\d.]+\s*/, '').trim())
+    .filter(line => line.length > 10 && line.length < 150)
+    .slice(0, 8) || []
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6">
       <div className="text-center space-y-2">
-        <h1 className="text-4xl font-bold font-heading">The Code Generator</h1>
-        <p className="text-lg text-muted-foreground">Turn your PRD into a working prototype</p>
+        <h1 className="text-4xl font-bold font-heading">AI-Powered Code Generator</h1>
+        <p className="text-lg text-muted-foreground">Transform your PRD into production-ready code</p>
       </div>
+
+      {journey.brand?.personality && (
+        <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0">
+                <Brain className="w-6 h-6 text-primary" weight="fill" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg mb-2">
+                  AI-Enhanced Code Generation
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Your code will reflect your <strong>{journey.brand.personality.archetype}</strong> brand personality and incorporate intelligent recommendations based on your PRD
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {step === 'template' && (
         <Card>
@@ -1135,8 +1324,15 @@ Include 3-5 files (HTML, CSS, JS as needed). Make the code production-ready and 
                   <div className="text-4xl">{template.icon}</div>
                   <div className="flex-1">
                     <h3 className="font-semibold text-lg mb-1">{template.name}</h3>
-                    <p className="text-sm text-muted-foreground mb-2">{template.description}</p>
-                    <Badge variant="outline" className="text-xs">
+                    <p className="text-sm text-muted-foreground mb-3">{template.description}</p>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {template.features.map((feature, idx) => (
+                        <Badge key={idx} variant="outline" className="text-xs">
+                          {feature}
+                        </Badge>
+                      ))}
+                    </div>
+                    <Badge variant="secondary" className="text-xs">
                       Best for: {template.bestFor}
                     </Badge>
                   </div>
@@ -1145,12 +1341,179 @@ Include 3-5 files (HTML, CSS, JS as needed). Make the code production-ready and 
             ))}
           </CardContent>
           <CardFooter>
-            <Button onClick={generateCode} className="w-full" size="lg">
-              <Sparkle className="mr-2" weight="fill" />
-              Generate Code
+            <Button onClick={() => setStep('customize')} className="w-full" size="lg">
+              Continue to Customization
+              <ArrowRight className="ml-2" weight="bold" />
             </Button>
           </CardFooter>
         </Card>
+      )}
+
+      {step === 'customize' && (
+        <div className="space-y-6">
+          {aiInsights && (
+            <Card className="bg-accent/10 border-accent/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Brain weight="fill" className="text-accent" />
+                  AI Architecture Analysis
+                </CardTitle>
+                <CardDescription>Intelligent recommendations based on your PRD</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                    <Sparkle className="w-4 h-4" weight="fill" />
+                    Technical Recommendations
+                  </h3>
+                  <ul className="space-y-2">
+                    {aiInsights.recommendations.map((rec, idx) => (
+                      <li key={idx} className="text-sm flex items-start gap-2">
+                        <span className="text-accent mt-0.5">✓</span>
+                        <span>{rec}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                    <Shield weight="fill" className="w-4 h-4" />
+                    Security & Compliance Notes
+                  </h3>
+                  <ul className="space-y-2">
+                    {aiInsights.securityNotes.map((note, idx) => (
+                      <li key={idx} className="text-sm flex items-start gap-2">
+                        <span className="text-orange-600 mt-0.5">⚠</span>
+                        <span>{note}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Customize Your Code Generation</CardTitle>
+              <CardDescription>Select features to include in your MVP</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <h3 className="font-semibold text-sm">Code Features</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label className="flex items-center gap-3 p-4 rounded-lg border-2 border-border hover:border-primary/50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={customizations.includeAuth}
+                      onChange={(e) => setCustomizations({ ...customizations, includeAuth: e.target.checked })}
+                      className="w-5 h-5"
+                    />
+                    <div>
+                      <div className="font-medium">User Authentication</div>
+                      <div className="text-xs text-muted-foreground">Login/signup UI components</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-4 rounded-lg border-2 border-border hover:border-primary/50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={customizations.includeForms}
+                      onChange={(e) => setCustomizations({ ...customizations, includeForms: e.target.checked })}
+                      className="w-5 h-5"
+                    />
+                    <div>
+                      <div className="font-medium">Form Validation</div>
+                      <div className="text-xs text-muted-foreground">Error states & validation logic</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-4 rounded-lg border-2 border-border hover:border-primary/50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={customizations.includeCharts}
+                      onChange={(e) => setCustomizations({ ...customizations, includeCharts: e.target.checked })}
+                      className="w-5 h-5"
+                    />
+                    <div>
+                      <div className="font-medium">Data Visualizations</div>
+                      <div className="text-xs text-muted-foreground">Charts for health metrics</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-4 rounded-lg border-2 border-border hover:border-primary/50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={customizations.includeAccessibility}
+                      onChange={(e) => setCustomizations({ ...customizations, includeAccessibility: e.target.checked })}
+                      className="w-5 h-5"
+                    />
+                    <div>
+                      <div className="font-medium">WCAG Accessibility</div>
+                      <div className="text-xs text-muted-foreground">Screen reader & keyboard support</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-4 rounded-lg border-2 border-border hover:border-primary/50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={customizations.includeAnimations}
+                      onChange={(e) => setCustomizations({ ...customizations, includeAnimations: e.target.checked })}
+                      className="w-5 h-5"
+                    />
+                    <div>
+                      <div className="font-medium">Micro-interactions</div>
+                      <div className="text-xs text-muted-foreground">Smooth animations & transitions</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {extractedFeatures.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-sm">Priority Features from PRD</h3>
+                  <p className="text-xs text-muted-foreground">Select up to 3 features to prioritize in code generation</p>
+                  <div className="grid grid-cols-1 gap-2">
+                    {extractedFeatures.map((feature, idx) => (
+                      <label
+                        key={idx}
+                        className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                          selectedFeatures.includes(feature)
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedFeatures.includes(feature)}
+                          onChange={(e) => {
+                            if (e.target.checked && selectedFeatures.length < 3) {
+                              setSelectedFeatures([...selectedFeatures, feature])
+                            } else if (!e.target.checked) {
+                              setSelectedFeatures(selectedFeatures.filter(f => f !== feature))
+                            }
+                          }}
+                          disabled={!selectedFeatures.includes(feature) && selectedFeatures.length >= 3}
+                          className="mt-0.5 w-4 h-4"
+                        />
+                        <span className="text-sm flex-1">{feature}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+            <CardFooter className="flex gap-3">
+              <Button variant="outline" onClick={() => setStep('template')}>
+                Back
+              </Button>
+              <Button onClick={generateCode} disabled={isGenerating} className="flex-1" size="lg">
+                <Sparkle className="mr-2" weight="fill" />
+                Generate AI-Powered Code
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
       )}
 
       {step === 'generating' && (
@@ -1166,10 +1529,11 @@ Include 3-5 files (HTML, CSS, JS as needed). Make the code production-ready and 
               <p className="text-muted-foreground">Building your {templates.find(t => t.type === selectedTemplate)?.name}</p>
             </div>
             <div className="max-w-md mx-auto space-y-2 text-sm text-muted-foreground">
-              <p>✓ Analyzing your PRD</p>
-              <p>✓ Integrating brand identity</p>
+              <p>✓ Analyzing PRD requirements</p>
+              <p>✓ Integrating brand personality</p>
+              <p>✓ Applying AI recommendations</p>
               <p>✓ Structuring components</p>
-              <p className="animate-pulse">⏳ Generating code files...</p>
+              <p className="animate-pulse">⏳ Writing production code...</p>
             </div>
           </CardContent>
         </Card>
@@ -1177,11 +1541,27 @@ Include 3-5 files (HTML, CSS, JS as needed). Make the code production-ready and 
 
       {step === 'preview' && generatedCode && (
         <div className="space-y-6">
+          <Card className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 dark:border-green-800">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                  <Rocket className="w-6 h-6 text-green-600 dark:text-green-400" weight="fill" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg">Code Generated Successfully!</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {generatedCode.files.length} production-ready files with {generatedCode.files.reduce((sum, f) => sum + f.content.split('\n').length, 0)} lines of code
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Generated Code Structure</CardTitle>
               <CardDescription>
-                {generatedCode.files.length} files generated for your {templates.find(t => t.type === selectedTemplate)?.name}
+                Your {templates.find(t => t.type === selectedTemplate)?.name} is ready for development
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -1190,9 +1570,22 @@ Include 3-5 files (HTML, CSS, JS as needed). Make the code production-ready and 
                   <div key={idx} className="border rounded-lg overflow-hidden">
                     <div className="bg-muted px-4 py-2 font-mono text-sm font-semibold flex items-center justify-between">
                       <span>{file.path}</span>
-                      <Badge variant="secondary" className="text-xs">
-                        {file.content.split('\n').length} lines
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs">
+                          {file.content.split('\n').length} lines
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            navigator.clipboard.writeText(file.content)
+                            toast.success(`Copied ${file.path}`)
+                          }}
+                          className="h-6 px-2 text-xs"
+                        >
+                          Copy
+                        </Button>
+                      </div>
                     </div>
                     <ScrollArea className="h-[200px]">
                       <pre className="p-4 text-xs font-mono bg-background">
@@ -1203,21 +1596,39 @@ Include 3-5 files (HTML, CSS, JS as needed). Make the code production-ready and 
                 ))}
               </div>
 
-              <div className="bg-accent/10 border border-accent/20 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <div className="text-2xl">💡</div>
-                  <div className="flex-1 text-sm">
-                    <p className="font-semibold mb-1">Ready for Development</p>
-                    <p className="text-muted-foreground">
-                      These files provide a starting point. Customize them with your specific logic, integrate with backend services, and add security features before deploying to production.
-                    </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="text-2xl">💡</div>
+                    <div className="flex-1 text-sm">
+                      <p className="font-semibold mb-1 text-blue-900 dark:text-blue-100">Next Steps</p>
+                      <p className="text-blue-700 dark:text-blue-300 text-xs">
+                        Download these files, set up your development environment, and start customizing with your specific business logic
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="text-2xl">⚠️</div>
+                    <div className="flex-1 text-sm">
+                      <p className="font-semibold mb-1 text-orange-900 dark:text-orange-100">Before Production</p>
+                      <p className="text-orange-700 dark:text-orange-300 text-xs">
+                        Add authentication, integrate backend APIs, implement HIPAA compliance, and conduct security audits
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
             </CardContent>
             <CardFooter className="flex gap-3">
-              <Button variant="outline" onClick={() => setStep('template')}>
-                Generate Different Template
+              <Button variant="outline" onClick={() => setStep('customize')}>
+                Regenerate
+              </Button>
+              <Button variant="outline" onClick={() => setStep('enhance')}>
+                <Sparkle className="mr-2" weight="fill" />
+                AI Enhance
               </Button>
               <Button onClick={handleComplete} className="flex-1">
                 Complete Code Phase
@@ -1226,6 +1637,82 @@ Include 3-5 files (HTML, CSS, JS as needed). Make the code production-ready and 
             </CardFooter>
           </Card>
         </div>
+      )}
+
+      {step === 'enhance' && generatedCode && (
+        <Card>
+          <CardHeader>
+            <CardTitle>AI Code Enhancement</CardTitle>
+            <CardDescription>Add specific improvements to your generated code</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Button
+                variant="outline"
+                onClick={() => enhanceCode('Add comprehensive error handling and loading states to all components')}
+                disabled={isGenerating}
+                className="h-auto py-4 justify-start text-left"
+              >
+                <div>
+                  <div className="font-semibold text-sm">Error Handling</div>
+                  <div className="text-xs text-muted-foreground">Add try-catch blocks and error states</div>
+                </div>
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => enhanceCode('Improve responsive design for mobile devices with touch-friendly interactions')}
+                disabled={isGenerating}
+                className="h-auto py-4 justify-start text-left"
+              >
+                <div>
+                  <div className="font-semibold text-sm">Mobile Optimization</div>
+                  <div className="text-xs text-muted-foreground">Enhance mobile experience</div>
+                </div>
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => enhanceCode('Add SEO meta tags, Open Graph tags, and improve semantic HTML structure')}
+                disabled={isGenerating}
+                className="h-auto py-4 justify-start text-left"
+              >
+                <div>
+                  <div className="font-semibold text-sm">SEO & Meta Tags</div>
+                  <div className="text-xs text-muted-foreground">Improve discoverability</div>
+                </div>
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => enhanceCode('Add performance optimizations like lazy loading, code splitting, and image optimization')}
+                disabled={isGenerating}
+                className="h-auto py-4 justify-start text-left"
+              >
+                <div>
+                  <div className="font-semibold text-sm">Performance</div>
+                  <div className="text-xs text-muted-foreground">Speed up load times</div>
+                </div>
+              </Button>
+            </div>
+
+            {isGenerating && (
+              <div className="text-center py-8">
+                <Sparkle className="w-8 h-8 mx-auto mb-3 animate-pulse text-primary" weight="fill" />
+                <p className="text-sm text-muted-foreground">Enhancing your code...</p>
+              </div>
+            )}
+          </CardContent>
+          <CardFooter className="flex gap-3">
+            <Button variant="outline" onClick={() => setStep('preview')}>
+              Back to Preview
+            </Button>
+            <Button onClick={handleComplete} className="flex-1">
+              Complete Code Phase
+              <ArrowRight className="ml-2" weight="bold" />
+            </Button>
+          </CardFooter>
+        </Card>
       )}
     </div>
   )
