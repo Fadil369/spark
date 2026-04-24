@@ -1,6 +1,5 @@
 import { Journey } from '@/lib/types'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { 
   Lightbulb, 
   BookOpen, 
@@ -16,6 +15,7 @@ import {
   MagicWand,
   type Icon as PhosphorIcon
 } from '@phosphor-icons/react'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface BadgeShowcaseProps {
   journey: Journey
@@ -37,20 +37,21 @@ const BADGE_ICON_MAP: Record<string, PhosphorIcon> = {
 }
 
 export function BadgeShowcase({ journey }: BadgeShowcaseProps) {
+  const { t } = useLanguage()
   const earnedBadges = journey.gameState.badges.filter(b => b.earned)
   const unearnedBadges = journey.gameState.badges.filter(b => !b.earned)
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Achievement Badges</CardTitle>
-        <CardDescription>Unlock badges as you complete your startup journey</CardDescription>
+        <CardTitle>{t.achievementBadges}</CardTitle>
+        <CardDescription>{t.achievementBadgesSubtitle}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
           {earnedBadges.length > 0 && (
             <div>
-              <h4 className="text-sm font-semibold mb-3">Earned</h4>
+              <h4 className="text-sm font-semibold mb-3">{t.earned}</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {earnedBadges.map((badge) => {
                   const Icon = BADGE_ICON_MAP[badge.icon] || Star
@@ -75,7 +76,7 @@ export function BadgeShowcase({ journey }: BadgeShowcaseProps) {
 
           {unearnedBadges.length > 0 && (
             <div>
-              <h4 className="text-sm font-semibold mb-3 text-muted-foreground">Locked</h4>
+              <h4 className="text-sm font-semibold mb-3 text-muted-foreground">{t.locked}</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {unearnedBadges.map((badge) => {
                   const Icon = BADGE_ICON_MAP[badge.icon] || Star
@@ -102,3 +103,4 @@ export function BadgeShowcase({ journey }: BadgeShowcaseProps) {
     </Card>
   )
 }
+
