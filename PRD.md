@@ -3,21 +3,28 @@
 HealFounder is a gamified, story-driven platform that transforms the messy early-stage healthcare startup journey into a satisfying, level-based progression system where aspiring founders brainstorm ideas, craft narratives, build brands, write PRDs, generate code, and push to GitHub—all with AI assistance.
 
 **Experience Qualities**:
-1. **Empowering** - Every interaction makes the user feel capable of building something real, with AI as a helpful sidekick rather than the hero
+1. **Empowering** - Every interaction makes the user feel capable of building something real, with AI as a helpful sidekick rather than the hero; supports users in their native language (Arabic or English)
 2. **Progressive** - Clear visual advancement through locked and unlocked stages creates momentum and achievement
 3. **Playful** - Healthcare startup building shouldn't feel intimidating; game mechanics, badges, and delightful micro-interactions keep it fun
 
 **Complexity Level**: Complex Application (advanced functionality, likely with multiple views)
-This is a multi-phase application with persistent state, AI integration via Spark's LLM API, dynamic content generation, visual progression system, and complex data modeling across six distinct stages of the startup journey.
+This is a multi-phase application with persistent state, AI integration via Spark's LLM API, dynamic content generation, visual progression system, complex data modeling across six distinct stages, internationalization with RTL support, and persistent gamification mechanics.
 
 ## Essential Features
 
+**Internationalization System (Arabic/English)**
+- Functionality: Full bilingual support with Arabic (RTL) and English (LTR) language switching, comprehensive translations for all UI elements, automatic RTL layout adaptation
+- Purpose: Make the platform accessible to Arabic-speaking healthcare entrepreneurs across the Middle East and North Africa, supporting both Western and Arabic user experiences
+- Trigger: User clicks language toggle in header, or browser/localStorage language preference
+- Progression: User clicks Globe icon → Language switches → UI re-renders with translated text → Layout adapts to RTL/LTR → Preference saved to localStorage
+- Success criteria: All text translates accurately, RTL layout feels natural, language persists across sessions, no broken layouts in either direction
+
 **Phase Navigation System**
-- Functionality: Sequential unlocking of 6 phases (Brainstorm → Story → Brand → PRD → Code → GitHub), with visual progress indicator
+- Functionality: Sequential unlocking of 6 phases (Brainstorm → Story → Brand → PRD → Code → GitHub), with visual progress indicator, horizontal timeline on desktop, vertical list on mobile
 - Purpose: Creates clear structure and prevents overwhelm by guiding users through a proven process
 - Trigger: User completes previous phase or views dashboard
 - Progression: Dashboard → Select active/next phase → Phase-specific interface → Complete phase → Unlock next → Return to dashboard
-- Success criteria: Users can navigate between completed phases, see locked future phases, and understand their current position
+- Success criteria: Users can navigate between completed phases, see locked future phases, understand their current position, and navigate intuitively on mobile
 
 **Phase 1: Brainstorm Canvas**
 - Functionality: Freeform text input for healthcare problems, AI-generated related concepts as interactive bubbles, concept card creation
@@ -62,11 +69,11 @@ This is a multi-phase application with persistent state, AI integration via Spar
 - Success criteria: User creates a real GitHub repository with all generated files, receives a working repository URL, unlocks "Repo Rocketeer" badge, can access and manage their code on GitHub
 
 **Gamification Engine**
-- Functionality: XP tracking, badge awards, level progression (1-10), milestone celebrations, streak tracking
-- Purpose: Create engagement and reward progress
+- Functionality: XP tracking, badge awards, level progression (1-10), milestone celebrations, streak tracking, persistent state via Spark's useKV hook
+- Purpose: Create engagement and reward progress while maintaining data across sessions
 - Trigger: Complete any phase milestone or special action
-- Progression: User action → XP calculation → Badge check → Award notification → Update dashboard
-- Success criteria: Dashboard shows current XP, level, badges earned, and progress bar
+- Progression: User action → XP calculation → Badge check → Update journey state → Award notification → Update dashboard → Persist to key-value store
+- Success criteria: Dashboard shows current XP, level, badges earned, progress bar, and all state persists across page refreshes and sessions
 
 **AI Assistance System**
 - Functionality: Context-aware suggestions in each phase using Spark's LLM API, regeneration options, edit capabilities
@@ -77,16 +84,18 @@ This is a multi-phase application with persistent state, AI integration via Spar
 
 ## Edge Case Handling
 
+- **Internationalization Edge Cases** - Ensure long Arabic text wraps properly, numbers display correctly in RTL, icons maintain proper alignment in both directions
 - **Incomplete Phase Data** - Allow users to save progress mid-phase and resume later without losing work
 - **AI Generation Failures** - Show friendly error messages with retry option and fallback manual input
 - **Navigation to Locked Phases** - Display "locked" state with requirements clearly shown
 - **Empty Brainstorm Input** - Provide example healthcare problems as starting inspiration
 - **Long AI Generation Times** - Show loading states with progress indicators and healthcare facts
 - **Multiple Projects** - Allow viewing dashboard with project list, but focus MVP on single active journey
+- **Theme Persistence** - Dark/light mode preferences saved to localStorage and synced with system preferences
 
 ## Design Direction
 
-The design should feel like a premium healthcare-tech product meets a modern game interface—clean, professional, but with moments of delight. Think Duolingo's progression system meets Notion's polish, with healthcare-specific visual language (pulse lines, stethoscope shapes, clean medical aesthetics). The experience should feel safe and trustworthy while being genuinely fun.
+The design should feel like a premium healthcare-tech product meets a modern game interface—clean, professional, but with moments of delight. Think Duolingo's progression system meets Notion's polish, with healthcare-specific visual language (pulse lines, stethoscope shapes, clean medical aesthetics). The experience should feel safe and trustworthy while being genuinely fun. Full support for RTL (Arabic) and LTR (English) layouts ensures the interface feels natural regardless of language preference, with dark mode support for comfortable extended use.
 
 ## Color Selection
 
@@ -131,6 +140,7 @@ Animations should feel purposeful and healthcare-inspired—smooth, confident, w
   - Separator for visual section breaks
   - ScrollArea for long generated content
   - Tooltip for helper text and locked phase explanations
+  - Sonner (toast notifications) for success/error feedback
   
 - **Customizations**: 
   - Custom phase navigation component with locked/unlocked states and connecting progress lines
@@ -138,6 +148,10 @@ Animations should feel purposeful and healthcare-inspired—smooth, confident, w
   - Feature card swiper using transform animations (not a separate library)
   - Achievement badge showcase with staggered reveal animations
   - Custom progress ring for level advancement using SVG
+  - AILoadingScreen component with rotating healthcare facts in both English and Arabic
+  - LanguageProvider context for managing internationalization state and RTL layout
+  - CelebrationDialog with confetti effects for phase completion
+  - Persistent state management using Spark's useKV hook for journey data
   
 - **States**: 
   - Buttons show clear hover lift (translateY -1px, shadow increase), active press (scale 0.98), disabled (opacity 0.5)
@@ -149,11 +163,13 @@ Animations should feel purposeful and healthcare-inspired—smooth, confident, w
   - Phosphor icons throughout - Lightbulb for brainstorm, BookOpen for story, Palette for brand, FileText for PRD, Code for generation, GithubLogo for push
   - Trophy, Star, Medal, Crown for achievements
   - Lock for locked phases, Check for completed, ArrowRight for progression
+  - Globe for language switching, Sun/Moon for theme toggle
   
 - **Spacing**: 
   - Container padding: p-6 (medium screens), p-4 (mobile)
   - Section gaps: gap-8 (between major sections), gap-4 (between related items), gap-2 (tight groupings)
   - Card internal padding: p-6
+  - RTL-aware spacing that mirrors appropriately for Arabic layout
   
 - **Mobile**: 
   - Phase navigation switches from horizontal timeline to vertical list on mobile
@@ -161,3 +177,82 @@ Animations should feel purposeful and healthcare-inspired—smooth, confident, w
   - Side-by-side editing layouts stack vertically
   - Floating action buttons for primary phase actions on mobile
   - Touch-friendly 44px minimum tap targets
+  - Language and theme toggles remain easily accessible in mobile header
+
+## Technical Architecture
+
+**State Management**
+- Primary data persistence: Spark's `useKV` hook for journey state (`healfounder-journey`)
+- Browser localStorage: Language preference (`healfounder-lang`) and theme preference (`healfounder-theme`)
+- React Context: LanguageContext for internationalization state and translations
+- Component-level state: useState for UI interactions, form inputs, and loading states
+
+**Internationalization Implementation**
+- Translation system: Centralized translation objects in `lib/i18n.ts` with type-safe keys
+- RTL support: Dynamic `dir` attribute on document root, CSS logical properties for layout
+- Language persistence: localStorage with fallback to 'en'
+- Component structure: LanguageProvider wraps app, useLanguage hook for accessing translations
+- Translated components: All user-facing text uses `t` object from context
+
+**Data Models**
+- Journey: Main container with phases, concept, story, brand, PRD, code, githubRepo, gameState
+- PhaseStatus: Tracks completion and unlock state for each of 6 phases
+- GameState: XP, level, badges array, streak tracking
+- ConceptCard, Story, Brand, PRD, GeneratedCode, GitHubRepo: Phase-specific data structures
+- Badge: Achievement definitions with earned status and timestamps
+
+**Key Libraries & Tools**
+- React 19.2.0 with TypeScript
+- Spark SDK: useKV hook, LLM API (spark.llm, spark.llmPrompt), user API (spark.user)
+- UI Components: shadcn v4 (Radix UI primitives)
+- Icons: @phosphor-icons/react
+- Styling: Tailwind CSS v4 with oklch color system
+- Animations: framer-motion for micro-interactions and celebrations
+- Date handling: date-fns
+- Forms: react-hook-form with zod validation
+- Notifications: sonner for toast messages
+
+## Implementation Status
+
+**Completed Features** ✅
+- Core application architecture with TypeScript
+- Internationalization system (English + Arabic) with RTL support
+- LanguageProvider context and translation system
+- Dark/light theme toggle with system preference detection
+- Main dashboard with phase navigation
+- Gamification engine (XP, levels, badges, streaks)
+- Phase navigation component with locked/unlocked states
+- Badge showcase with visual achievements
+- Game stats display (level, XP, badges)
+- Celebration dialog with confetti effects
+- AI loading screen with healthcare facts (bilingual)
+- Persistent state management via Spark's useKV
+- Brainstorm phase with AI concept generation (partial)
+- Story phase with tone selection and AI generation (partial)
+- Brand phase structure (placeholder)
+- PRD phase structure (placeholder)
+- Code generation phase structure (placeholder)
+- GitHub integration phase structure (placeholder)
+- Error boundary with fallback UI
+- Responsive mobile layout
+- Custom theme with medical-inspired color palette
+
+**In Development** 🚧
+- Full Brainstorm phase implementation (AI bubble interactions, concept refinement)
+- Complete Story phase (narrative templates, quality scoring)
+- Brand phase (personality quiz, name generation, color palette, logo picker)
+- PRD phase (section builder, templates, completeness scoring, PDF export)
+- Code generation (template selection, file generation, preview)
+- GitHub integration (repository creation, file upload, authentication)
+
+**Planned Enhancements** 📋
+- Multi-project support
+- Streak tracking with reminder notifications
+- Additional badge achievements
+- Export journey as shareable link
+- Community features (sharing concepts/stories)
+- AI model selection per phase
+- Enhanced analytics dashboard
+- Onboarding tutorial
+- Accessibility improvements (ARIA labels, keyboard navigation)
+- Performance optimizations for large journeys
