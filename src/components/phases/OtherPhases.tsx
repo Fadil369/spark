@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Journey, Story, Brand, BrandPersonality, GeneratedCode } from '@/lib/types'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, Sparkle, Brain, Heart, Rocket, Shield, Target, Users } from '@phosphor-icons/react'
+import { ArrowRight, Sparkle, Brain, Heart, Rocket, Shield, Target, Users, Check } from '@phosphor-icons/react'
 import { Textarea } from '@/components/ui/textarea'
 import { Slider } from '@/components/ui/slider'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -13,6 +13,7 @@ import { Progress } from '@/components/ui/progress'
 import { AILoadingScreen } from '@/components/AILoadingScreen'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { LiveCodePreview } from '@/components/LiveCodePreview'
+import { BrainsaitEnterpriseOffer } from '@/components/BrainsaitEnterpriseOffer'
 
 interface CompletionPhaseProps {
   journey: Journey
@@ -1989,11 +1990,14 @@ Make sure the enhancement is production-ready and well-integrated.`
 }
 
 export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
-  const [step, setStep] = useState<'summary' | 'configure' | 'creating' | 'success'>('summary')
+  const [step, setStep] = useState<'summary' | 'choose-deployment' | 'configure' | 'brainsait-configure' | 'creating' | 'success'>('summary')
+  const [deploymentChoice, setDeploymentChoice] = useState<'personal' | 'brainsait' | null>(null)
   const [repoName, setRepoName] = useState('')
   const [isPrivate, setIsPrivate] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [founderEmail, setFounderEmail] = useState('')
+  const [companyName, setCompanyName] = useState(journey.brand?.name || '')
 
   useEffect(() => {
     if (journey.githubRepo) {
@@ -2060,12 +2064,14 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="text-center space-y-2">
-        <h1 className="text-4xl font-bold font-heading">GitHub Repository</h1>
+        <h1 className="text-4xl font-bold font-heading">Deploy Your Startup</h1>
         <p className="text-lg text-muted-foreground">
-          {step === 'summary' ? 'Review your journey and push to GitHub' : 
+          {step === 'summary' ? 'Review your journey and choose deployment' : 
+           step === 'choose-deployment' ? 'Choose your deployment option' :
            step === 'configure' ? 'Configure your repository settings' :
+           step === 'brainsait-configure' ? 'Join Brainsait Enterprise' :
            step === 'creating' ? 'Creating your repository...' :
-           'Your code is live on GitHub!'}
+           'Your code is live!'}
         </p>
       </div>
 
@@ -2126,28 +2132,173 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle>Ready to Push to GitHub?</CardTitle>
+              <CardTitle>Choose Your Deployment Option</CardTitle>
               <CardDescription>
-                Create a GitHub repository with your generated code and README
+                Select where you'd like to deploy your generated code
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <p className="text-sm">
-                  Clicking "Create Repository" will:
-                </p>
-                <ul className="text-sm space-y-1 ml-6 list-disc text-muted-foreground">
-                  <li>Create a new GitHub repository under your account</li>
-                  <li>Push all generated code files to the repository</li>
-                  <li>Generate and include a comprehensive README.md</li>
-                  <li>Make your project immediately accessible</li>
-                </ul>
+              <div className="space-y-3">
+                <button
+                  onClick={() => {
+                    setDeploymentChoice('personal')
+                    setStep('configure')
+                  }}
+                  className="w-full p-6 rounded-lg border-2 border-border hover:border-primary/70 transition-all text-left"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                      <Rocket className="w-6 h-6" weight="fill" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-lg mb-1">Personal GitHub Repository</h3>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Create a repository under your personal GitHub account. Perfect for getting started quickly.
+                      </p>
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        <Badge variant="secondary">Free</Badge>
+                        <Badge variant="secondary">Immediate Setup</Badge>
+                        <Badge variant="secondary">Full Control</Badge>
+                      </div>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setDeploymentChoice('brainsait')
+                    setStep('brainsait-configure')
+                  }}
+                  className="w-full p-6 rounded-lg border-2 border-purple-500 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950 dark:to-blue-950 hover:border-purple-600 transition-all text-left relative overflow-hidden"
+                >
+                  <div className="absolute top-0 right-0 bg-gradient-to-l from-yellow-400 to-orange-400 text-xs font-bold px-3 py-1 rounded-bl-lg text-gray-900">
+                    RECOMMENDED
+                  </div>
+                  <div className="flex items-start gap-4 mt-2">
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center flex-shrink-0">
+                      <Sparkle className="w-6 h-6 text-white" weight="fill" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-lg mb-1 flex items-center gap-2">
+                        Brainsait Enterprise Partnership
+                        <Badge className="bg-yellow-400 text-gray-900 text-[10px] px-1.5 py-0">FREE</Badge>
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Deploy to our enterprise GitHub organization with free hosting, HIPAA compliance, mentorship, and $15,000 in value for 6 months.
+                      </p>
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        <Badge className="bg-purple-600 text-white">Enterprise GitHub</Badge>
+                        <Badge className="bg-blue-600 text-white">Free Hosting</Badge>
+                        <Badge className="bg-green-600 text-white">Mentorship</Badge>
+                        <Badge className="bg-orange-600 text-white">$15K Value</Badge>
+                      </div>
+                    </div>
+                  </div>
+                </button>
               </div>
             </CardContent>
-            <CardFooter>
-              <Button onClick={() => setStep('configure')} className="w-full" size="lg">
-                <Rocket className="mr-2" weight="fill" />
-                Create GitHub Repository
+          </Card>
+        </div>
+      )}
+
+      {step === 'brainsait-configure' && (
+        <div className="space-y-6">
+          <BrainsaitEnterpriseOffer />
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Join Brainsait Enterprise</CardTitle>
+              <CardDescription>
+                Submit your application to access enterprise features
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <label htmlFor="founder-email" className="text-sm font-semibold">
+                  Your Email Address
+                </label>
+                <input
+                  id="founder-email"
+                  type="email"
+                  value={founderEmail}
+                  onChange={(e) => setFounderEmail(e.target.value)}
+                  placeholder="founder@example.com"
+                  className="w-full px-4 py-2 rounded-lg border border-input bg-background"
+                />
+                <p className="text-xs text-muted-foreground">
+                  We'll send enterprise access details and onboarding information here
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="company-name" className="text-sm font-semibold">
+                  Company/Project Name
+                </label>
+                <input
+                  id="company-name"
+                  type="text"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  placeholder="Your Healthcare Startup"
+                  className="w-full px-4 py-2 rounded-lg border border-input bg-background"
+                />
+              </div>
+
+              <div className="p-4 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border border-green-200 dark:border-green-800">
+                <div className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" weight="bold" />
+                  <div className="flex-1 text-sm">
+                    <p className="font-semibold mb-2 text-green-900 dark:text-green-100">What Happens Next?</p>
+                    <ol className="text-green-700 dark:text-green-300 text-xs space-y-1.5 ml-4 list-decimal">
+                      <li>We'll create your repository in the Brainsait Enterprise organization</li>
+                      <li>You'll receive an email invite to join the organization within 24 hours</li>
+                      <li>Your code will be automatically deployed with free hosting</li>
+                      <li>Our team will reach out to schedule your first mentorship session</li>
+                      <li>You'll get access to $500/month in AI credits starting immediately</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="flex gap-3">
+              <Button variant="outline" onClick={() => setStep('summary')}>
+                Back
+              </Button>
+              <Button 
+                onClick={async () => {
+                  if (!founderEmail.trim() || !companyName.trim()) {
+                    toast.error('Please fill in all fields')
+                    return
+                  }
+                  
+                  setIsCreating(true)
+                  try {
+                    toast.success('Application submitted! Check your email for next steps.')
+                    setTimeout(() => {
+                      setStep('success')
+                      if (onComplete) {
+                        const updatedJourney = completePhase(journey, 'github')
+                        onComplete(updatedJourney)
+                      }
+                    }, 1500)
+                  } catch (err) {
+                    toast.error('Failed to submit application')
+                  } finally {
+                    setIsCreating(false)
+                  }
+                }}
+                disabled={!founderEmail.trim() || !companyName.trim() || isCreating}
+                className="flex-1"
+                size="lg"
+              >
+                {isCreating ? (
+                  <>Submitting Application...</>
+                ) : (
+                  <>
+                    <Sparkle className="mr-2" weight="fill" />
+                    Apply for Brainsait Enterprise
+                  </>
+                )}
               </Button>
             </CardFooter>
           </Card>
