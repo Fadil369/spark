@@ -1025,6 +1025,8 @@ export function CodePhase({ journey, onComplete }: CompletionPhaseProps) {
   const [selectedFramework, setSelectedFramework] = useState<'html' | 'react' | 'vue'>('html')
   const [generatedCode, setGeneratedCode] = useState<GeneratedCode | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [retryAttempt, setRetryAttempt] = useState(0)
+  const [maxRetries] = useState(3)
   const [showPreview, setShowPreview] = useState(false)
   const [selectedFileIndex, setSelectedFileIndex] = useState(0)
   const [customizations, setCustomizations] = useState({
@@ -1237,7 +1239,7 @@ Be specific and actionable in your analysis.`
     }
   }, [step])
 
-  const generateCode = async () => {
+  const generateCode = async (retryCount = 0, maxRetries = 3) => {
     if (!journey.prd || !journey.brand) {
       toast.error('Please complete PRD and Brand phases first')
       return
@@ -1245,10 +1247,14 @@ Be specific and actionable in your analysis.`
 
     setIsGenerating(true)
     setStep('generating')
+    setRetryAttempt(0)
 
-    try {
-      const templateInfo = templates.find(t => t.type === selectedTemplate)
-      const personalityContext = journey.brand.personality ? `
+    const attemptGeneration = async (attemptNumber: number): Promise<void> => {
+      try {
+        setRetryAttempt(attemptNumber)
+        
+        const templateInfo = templates.find(t => t.type === selectedTemplate)
+        const personalityContext = journey.brand.personality ? `
 Brand Personality:
 - Archetype: ${journey.brand.personality.archetype}
 - Tone: ${journey.brand.personality.tone.join(', ')}
@@ -1258,11 +1264,11 @@ Brand Personality:
 
 Design the UI to reflect this personality. Use ${journey.brand.personality.styleDirection} styling. The interface should make users feel ${journey.brand.personality.targetFeeling}.` : ''
 
-      const featuresContext = selectedFeatures.length > 0 ? `
+        const featuresContext = selectedFeatures.length > 0 ? `
 Priority Features to Implement:
 ${selectedFeatures.map(f => `- ${f}`).join('\n')}` : ''
 
-      const customizationContext = `
+        const customizationContext = `
 Customization Options:
 - Include authentication UI: ${customizations.includeAuth ? 'Yes' : 'No'}
 - Include form validation: ${customizations.includeForms ? 'Yes' : 'No'}
@@ -1270,14 +1276,14 @@ Customization Options:
 - WCAG accessibility features: ${customizations.includeAccessibility ? 'Yes' : 'No'}
 - Micro-interactions and animations: ${customizations.includeAnimations ? 'Yes' : 'No'}`
 
-      const aiInsightsContext = aiInsights ? `
+        const aiInsightsContext = aiInsights ? `
 AI Architecture Recommendations:
 ${aiInsights.recommendations.map(r => `- ${r}`).join('\n')}
 
 Security Considerations:
 ${aiInsights.securityNotes.map(n => `- ${n}`).join('\n')}` : ''
-      
-      const prompt = window.spark.llmPrompt`You are an expert healthcare web developer. Generate a complete, production-quality code structure for a ${selectedTemplate}.
+        
+        const prompt = window.spark.llmPrompt`You are an expert healthcare web developer. Generate a complete, production-quality code structure for a ${selectedTemplate}.
 
 BRAND INFORMATION:
 Name: ${journey.brand.name}
@@ -1329,31 +1335,49 @@ Include 4-6 files (HTML, CSS, JavaScript as needed). Code should be:
 
 Make the code immediately usable as an MVP foundation.`
 
-      const response = await window.spark.llm(prompt, 'gpt-4o', true)
-      const result = JSON.parse(response)
+        const response = await window.spark.llm(prompt, 'gpt-4o', true)
+        const result = JSON.parse(response)
 
-      if (!result.files || !Array.isArray(result.files) || result.files.length === 0) {
-        throw new Error('Invalid response: No files generated')
+        if (!result.files || !Array.isArray(result.files) || result.files.length === 0) {
+          throw new Error('Invalid response: No files generated')
+        }
+
+        const validatedFiles = result.files.map((file: any) => ({
+          path: file.path || 'untitled.txt',
+          content: file.content || ''
+        }))
+
+        const code: GeneratedCode = {
+          template: selectedTemplate,
+          files: validatedFiles,
+          previewUrl: undefined,
+          timestamp: Date.now()
+        }
+
+        setGeneratedCode(code)
+        setStep('preview')
+        successToast('Code generated successfully! 🚀')
+      } catch (error) {
+        console.error(`Code generation error (attempt ${attemptNumber + 1}/${maxRetries + 1}):`, error)
+        
+        if (attemptNumber < maxRetries) {
+          const delayMs = Math.pow(2, attemptNumber) * 1000
+          toast.error(`Generation failed. Retrying in ${delayMs / 1000}s... (Attempt ${attemptNumber + 1}/${maxRetries + 1})`)
+          
+          await new Promise(resolve => setTimeout(resolve, delayMs))
+          
+          return attemptGeneration(attemptNumber + 1)
+        } else {
+          throw error
+        }
       }
+    }
 
-      const validatedFiles = result.files.map((file: any) => ({
-        path: file.path || 'untitled.txt',
-        content: file.content || ''
-      }))
-
-      const code: GeneratedCode = {
-        template: selectedTemplate,
-        files: validatedFiles,
-        previewUrl: undefined,
-        timestamp: Date.now()
-      }
-
-      setGeneratedCode(code)
-      setStep('preview')
-      successToast('Code generated successfully! 🚀')
+    try {
+      await attemptGeneration(0)
     } catch (error) {
-      console.error('Code generation error:', error)
-      toast.error(`Failed to generate code: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      console.error('Code generation failed after all retries:', error)
+      toast.error(`Failed to generate code after ${maxRetries + 1} attempts. Please try again.`)
       setStep('customize')
     } finally {
       setIsGenerating(false)
@@ -1742,7 +1766,7 @@ Make sure the enhancement is production-ready and well-integrated.`
               <Button variant="outline" onClick={() => setStep('template')}>
                 Back
               </Button>
-              <Button onClick={generateCode} disabled={isGenerating} className="flex-1" size="lg">
+              <Button onClick={() => generateCode()} disabled={isGenerating} className="flex-1" size="lg">
                 <Sparkle className="mr-2" weight="fill" />
                 Generate AI-Powered Code
               </Button>
@@ -1762,6 +1786,11 @@ Make sure the enhancement is production-ready and well-integrated.`
             <div>
               <h3 className="text-xl font-semibold mb-2">Generating Your Code...</h3>
               <p className="text-muted-foreground">Building your {templates.find(t => t.type === selectedTemplate)?.name}</p>
+              {retryAttempt > 0 && (
+                <p className="text-sm text-orange-600 dark:text-orange-400 mt-2">
+                  Retry attempt {retryAttempt}/{maxRetries}
+                </p>
+              )}
             </div>
             <div className="max-w-md mx-auto space-y-2 text-sm text-muted-foreground">
               <p>✓ Analyzing PRD requirements</p>
