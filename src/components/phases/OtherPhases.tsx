@@ -1518,7 +1518,7 @@ Make sure the enhancement is production-ready and well-integrated.`
                     {aiInsights.recommendations.map((rec, idx) => (
                       <li key={idx} className="text-sm flex items-start gap-2">
                         <span className="text-accent mt-0.5 flex-shrink-0">✓</span>
-                        <span>{rec}</span>
+                        <span>{typeof rec === 'string' ? rec : (rec as any).recommendation || JSON.stringify(rec)}</span>
                       </li>
                     ))}
                   </ul>
@@ -1532,7 +1532,7 @@ Make sure the enhancement is production-ready and well-integrated.`
                     {aiInsights.technicalConsiderations.map((note, idx) => (
                       <li key={idx} className="text-sm flex items-start gap-2">
                         <span className="text-blue-600 mt-0.5 flex-shrink-0">→</span>
-                        <span>{note}</span>
+                        <span>{typeof note === 'string' ? note : (note as any).recommendation || (note as any).consideration || JSON.stringify(note)}</span>
                       </li>
                     ))}
                   </ul>
@@ -1546,7 +1546,7 @@ Make sure the enhancement is production-ready and well-integrated.`
                     {aiInsights.securityNotes.map((note, idx) => (
                       <li key={idx} className="text-sm flex items-start gap-2">
                         <span className="text-orange-600 mt-0.5 flex-shrink-0">⚠</span>
-                        <span>{note}</span>
+                        <span>{typeof note === 'string' ? note : (note as any).recommendation || (note as any).note || JSON.stringify(note)}</span>
                       </li>
                     ))}
                   </ul>
@@ -1832,7 +1832,7 @@ Make sure the enhancement is production-ready and well-integrated.`
                           {codeAnalysis.issues.map((issue, idx) => (
                             <li key={idx} className="text-sm flex items-start gap-2 p-2 rounded bg-orange-50 dark:bg-orange-950/30">
                               <span className="text-orange-600 mt-0.5 flex-shrink-0">⚠</span>
-                              <span>{issue}</span>
+                              <span>{typeof issue === 'string' ? issue : (issue as any).recommendation || (issue as any).issue || JSON.stringify(issue)}</span>
                             </li>
                           ))}
                         </ul>
@@ -1849,7 +1849,7 @@ Make sure the enhancement is production-ready and well-integrated.`
                           {codeAnalysis.suggestions.map((suggestion, idx) => (
                             <li key={idx} className="text-sm flex items-start gap-2 p-2 rounded bg-blue-50 dark:bg-blue-950/30">
                               <span className="text-blue-600 mt-0.5 flex-shrink-0">→</span>
-                              <span>{suggestion}</span>
+                              <span>{typeof suggestion === 'string' ? suggestion : (suggestion as any).recommendation || (suggestion as any).suggestion || JSON.stringify(suggestion)}</span>
                             </li>
                           ))}
                         </ul>
