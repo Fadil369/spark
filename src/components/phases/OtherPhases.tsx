@@ -1017,22 +1017,36 @@ Return a JSON object with a single property "taglines" containing an array of ex
 
 
 export function CodePhase({ journey, onComplete }: CompletionPhaseProps) {
-  const [step, setStep] = useState<'template' | 'customize' | 'generating' | 'preview' | 'enhance'>('template')
+  const [step, setStep] = useState<'template' | 'customize' | 'generating' | 'preview' | 'enhance' | 'analyze'>('template')
   const [selectedTemplate, setSelectedTemplate] = useState<'landing' | 'webapp' | 'dashboard'>('landing')
+  const [selectedFramework, setSelectedFramework] = useState<'html' | 'react' | 'vue'>('html')
   const [generatedCode, setGeneratedCode] = useState<GeneratedCode | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
+  const [selectedFileIndex, setSelectedFileIndex] = useState(0)
   const [customizations, setCustomizations] = useState({
     includeAuth: false,
     includeForms: true,
     includeCharts: false,
     includeAccessibility: true,
-    includeAnimations: true
+    includeAnimations: true,
+    includeResponsive: true,
+    includeSEO: false
   })
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([])
   const [aiInsights, setAiInsights] = useState<{
     recommendations: string[]
     technicalConsiderations: string[]
     securityNotes: string[]
+    architectureScore: number
+  } | null>(null)
+  const [codeAnalysis, setCodeAnalysis] = useState<{
+    quality: number
+    accessibility: number
+    security: number
+    performance: number
+    issues: string[]
+    suggestions: string[]
   } | null>(null)
 
   useEffect(() => {
@@ -1070,6 +1084,30 @@ export function CodePhase({ journey, onComplete }: CompletionPhaseProps) {
     }
   ]
 
+  const frameworks = [
+    {
+      id: 'html' as const,
+      name: 'HTML/CSS/JS',
+      description: 'Vanilla web technologies, no build step required',
+      icon: '🌐',
+      bestFor: 'Simple sites, quick prototypes, easy deployment'
+    },
+    {
+      id: 'react' as const,
+      name: 'React + TypeScript',
+      description: 'Modern component-based framework with TypeScript',
+      icon: '⚛️',
+      bestFor: 'Complex apps, reusable components, type safety'
+    },
+    {
+      id: 'vue' as const,
+      name: 'Vue 3',
+      description: 'Progressive framework with easy learning curve',
+      icon: '💚',
+      bestFor: 'Rapid development, intuitive API, flexibility'
+    }
+  ]
+
   const analyzeRequirements = async () => {
     if (!journey.prd || !journey.brand) return
 
@@ -1087,19 +1125,67 @@ PRD Target Users: ${journey.prd.sections.targetUsers.content.slice(0, 300)}
 PRD Regulatory: ${journey.prd.sections.regulatory.content.slice(0, 400)}
 
 Template Type: ${selectedTemplate}
+Framework: ${selectedFramework}
 
 Generate a JSON object with:
-- recommendations: Array of 3-4 specific technical recommendations for this product (e.g., "Implement end-to-end encryption for messaging", "Use chart.js for patient vitals visualization")
-- technicalConsiderations: Array of 3 technical decisions needed (frameworks, APIs, data handling approaches)
-- securityNotes: Array of 2-3 critical security/compliance considerations for implementation
+- recommendations: Array of 4-5 specific technical recommendations for this product (e.g., "Implement end-to-end encryption for messaging", "Use chart.js for patient vitals visualization")
+- technicalConsiderations: Array of 3-4 technical decisions needed (frameworks, APIs, data handling approaches)
+- securityNotes: Array of 3-4 critical security/compliance considerations for implementation
+- architectureScore: A numerical score from 0-100 representing how well-planned this architecture is based on the PRD
 
-Be specific to this healthcare context and template type.`
+Be specific to this healthcare context, template type, and chosen framework.`
 
-      const response = await window.spark.llm(prompt, 'gpt-4o-mini', true)
+      const response = await window.spark.llm(prompt, 'gpt-4o', true)
       const insights = JSON.parse(response)
       setAiInsights(insights)
     } catch (error) {
       console.error('Failed to analyze requirements:', error)
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const analyzeGeneratedCode = async () => {
+    if (!generatedCode) return
+    
+    setIsGenerating(true)
+    try {
+      const codeContent = generatedCode.files.map(f => `// ${f.path}\n${f.content.slice(0, 1000)}`).join('\n\n')
+      
+      const prompt = window.spark.llmPrompt`You are a code quality expert specializing in healthcare applications. Analyze this generated code and provide a comprehensive quality assessment:
+
+Template: ${selectedTemplate}
+Framework: ${selectedFramework}
+
+Code Files:
+${codeContent}
+
+Customizations Applied:
+- Authentication: ${customizations.includeAuth}
+- Form Validation: ${customizations.includeForms}
+- Data Visualizations: ${customizations.includeCharts}
+- Accessibility: ${customizations.includeAccessibility}
+- Animations: ${customizations.includeAnimations}
+- Responsive Design: ${customizations.includeResponsive}
+- SEO: ${customizations.includeSEO}
+
+Generate a JSON object with:
+- quality: Overall code quality score (0-100) based on clean code principles, maintainability, and structure
+- accessibility: Accessibility compliance score (0-100) based on WCAG guidelines and semantic HTML
+- security: Security assessment score (0-100) evaluating potential vulnerabilities and healthcare compliance
+- performance: Performance score (0-100) assessing load times, optimization, and best practices
+- issues: Array of 3-5 specific issues found in the code that should be addressed
+- suggestions: Array of 3-5 actionable improvement suggestions
+
+Be specific and actionable in your analysis.`
+
+      const response = await window.spark.llm(prompt, 'gpt-4o', true)
+      const analysis = JSON.parse(response)
+      setCodeAnalysis(analysis)
+      toast.success('Code analysis complete!')
+    } catch (error) {
+      console.error('Failed to analyze code:', error)
+      toast.error('Code analysis failed')
     } finally {
       setIsGenerating(false)
     }
@@ -1323,61 +1409,102 @@ Make sure the enhancement is production-ready and well-integrated.`
       )}
 
       {step === 'template' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Choose Your Template Type</CardTitle>
-            <CardDescription>Select the architecture that best fits your product</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {templates.map((template) => (
-              <button
-                key={template.type}
-                onClick={() => setSelectedTemplate(template.type)}
-                className={`w-full p-6 rounded-lg border-2 transition-all text-left ${
-                  selectedTemplate === template.type
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                <div className="flex items-start gap-4">
-                  <div className="text-4xl">{template.icon}</div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg mb-1">{template.name}</h3>
-                    <p className="text-sm text-muted-foreground mb-3">{template.description}</p>
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {template.features.map((feature, idx) => (
-                        <Badge key={idx} variant="outline" className="text-xs">
-                          {feature}
-                        </Badge>
-                      ))}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Choose Your Template Type</CardTitle>
+              <CardDescription>Select the architecture that best fits your product</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {templates.map((template) => (
+                <button
+                  key={template.type}
+                  onClick={() => setSelectedTemplate(template.type)}
+                  className={`w-full p-6 rounded-lg border-2 transition-all text-left ${
+                    selectedTemplate === template.type
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="text-4xl">{template.icon}</div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-lg mb-1">{template.name}</h3>
+                      <p className="text-sm text-muted-foreground mb-3">{template.description}</p>
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {template.features.map((feature, idx) => (
+                          <Badge key={idx} variant="outline" className="text-xs">
+                            {feature}
+                          </Badge>
+                        ))}
+                      </div>
+                      <Badge variant="secondary" className="text-xs">
+                        Best for: {template.bestFor}
+                      </Badge>
                     </div>
-                    <Badge variant="secondary" className="text-xs">
-                      Best for: {template.bestFor}
-                    </Badge>
                   </div>
-                </div>
-              </button>
-            ))}
-          </CardContent>
-          <CardFooter>
-            <Button onClick={() => setStep('customize')} className="w-full" size="lg">
-              Continue to Customization
-              <ArrowRight className="ml-2" weight="bold" />
-            </Button>
-          </CardFooter>
-        </Card>
+                </button>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Choose Your Framework</CardTitle>
+              <CardDescription>Select the technology stack for your code generation</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {frameworks.map((framework) => (
+                <button
+                  key={framework.id}
+                  onClick={() => setSelectedFramework(framework.id)}
+                  className={`w-full p-5 rounded-lg border-2 transition-all text-left ${
+                    selectedFramework === framework.id
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="text-3xl">{framework.icon}</div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold mb-1">{framework.name}</h3>
+                      <p className="text-sm text-muted-foreground mb-2">{framework.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        <strong>Best for:</strong> {framework.bestFor}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </CardContent>
+            <CardFooter>
+              <Button onClick={() => setStep('customize')} className="w-full" size="lg">
+                Continue to Customization
+                <ArrowRight className="ml-2" weight="bold" />
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
       )}
 
       {step === 'customize' && (
         <div className="space-y-6">
           {aiInsights && (
-            <Card className="bg-accent/10 border-accent/30">
+            <Card className="bg-gradient-to-r from-accent/10 to-primary/10 border-accent/30">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Brain weight="fill" className="text-accent" />
-                  AI Architecture Analysis
-                </CardTitle>
-                <CardDescription>Intelligent recommendations based on your PRD</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Brain weight="fill" className="text-accent" />
+                      AI Architecture Analysis
+                    </CardTitle>
+                    <CardDescription>Intelligent recommendations for {selectedFramework.toUpperCase()} {selectedTemplate}</CardDescription>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-accent">{aiInsights.architectureScore}</div>
+                    <div className="text-xs text-muted-foreground">Architecture Score</div>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div>
@@ -1388,8 +1515,22 @@ Make sure the enhancement is production-ready and well-integrated.`
                   <ul className="space-y-2">
                     {aiInsights.recommendations.map((rec, idx) => (
                       <li key={idx} className="text-sm flex items-start gap-2">
-                        <span className="text-accent mt-0.5">✓</span>
+                        <span className="text-accent mt-0.5 flex-shrink-0">✓</span>
                         <span>{rec}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                    <Target weight="fill" className="w-4 h-4" />
+                    Technical Decisions
+                  </h3>
+                  <ul className="space-y-2">
+                    {aiInsights.technicalConsiderations.map((note, idx) => (
+                      <li key={idx} className="text-sm flex items-start gap-2">
+                        <span className="text-blue-600 mt-0.5 flex-shrink-0">→</span>
+                        <span>{note}</span>
                       </li>
                     ))}
                   </ul>
@@ -1402,7 +1543,7 @@ Make sure the enhancement is production-ready and well-integrated.`
                   <ul className="space-y-2">
                     {aiInsights.securityNotes.map((note, idx) => (
                       <li key={idx} className="text-sm flex items-start gap-2">
-                        <span className="text-orange-600 mt-0.5">⚠</span>
+                        <span className="text-orange-600 mt-0.5 flex-shrink-0">⚠</span>
                         <span>{note}</span>
                       </li>
                     ))}
@@ -1483,6 +1624,32 @@ Make sure the enhancement is production-ready and well-integrated.`
                     <div>
                       <div className="font-medium">Micro-interactions</div>
                       <div className="text-xs text-muted-foreground">Smooth animations & transitions</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-4 rounded-lg border-2 border-border hover:border-primary/50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={customizations.includeResponsive}
+                      onChange={(e) => setCustomizations({ ...customizations, includeResponsive: e.target.checked })}
+                      className="w-5 h-5"
+                    />
+                    <div>
+                      <div className="font-medium">Responsive Design</div>
+                      <div className="text-xs text-muted-foreground">Mobile-first responsive layouts</div>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-4 rounded-lg border-2 border-border hover:border-primary/50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={customizations.includeSEO}
+                      onChange={(e) => setCustomizations({ ...customizations, includeSEO: e.target.checked })}
+                      className="w-5 h-5"
+                    />
+                    <div>
+                      <div className="font-medium">SEO Optimization</div>
+                      <div className="text-xs text-muted-foreground">Meta tags & semantic HTML</div>
                     </div>
                   </label>
                 </div>
@@ -1615,6 +1782,79 @@ Make sure the enhancement is production-ready and well-integrated.`
                 ))}
               </div>
 
+              {codeAnalysis && (
+                <Card className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950 dark:to-blue-950 border-purple-200 dark:border-purple-800">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Brain weight="fill" className="text-purple-600" />
+                      AI Code Quality Analysis
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="text-center p-4 rounded-lg bg-white/50 dark:bg-black/20">
+                        <div className={`text-3xl font-bold ${codeAnalysis.quality >= 80 ? 'text-green-600' : codeAnalysis.quality >= 60 ? 'text-yellow-600' : 'text-orange-600'}`}>
+                          {codeAnalysis.quality}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">Code Quality</div>
+                      </div>
+                      <div className="text-center p-4 rounded-lg bg-white/50 dark:bg-black/20">
+                        <div className={`text-3xl font-bold ${codeAnalysis.accessibility >= 80 ? 'text-green-600' : codeAnalysis.accessibility >= 60 ? 'text-yellow-600' : 'text-orange-600'}`}>
+                          {codeAnalysis.accessibility}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">Accessibility</div>
+                      </div>
+                      <div className="text-center p-4 rounded-lg bg-white/50 dark:bg-black/20">
+                        <div className={`text-3xl font-bold ${codeAnalysis.security >= 80 ? 'text-green-600' : codeAnalysis.security >= 60 ? 'text-yellow-600' : 'text-orange-600'}`}>
+                          {codeAnalysis.security}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">Security</div>
+                      </div>
+                      <div className="text-center p-4 rounded-lg bg-white/50 dark:bg-black/20">
+                        <div className={`text-3xl font-bold ${codeAnalysis.performance >= 80 ? 'text-green-600' : codeAnalysis.performance >= 60 ? 'text-yellow-600' : 'text-orange-600'}`}>
+                          {codeAnalysis.performance}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">Performance</div>
+                      </div>
+                    </div>
+
+                    {codeAnalysis.issues.length > 0 && (
+                      <div>
+                        <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                          <Shield weight="fill" className="w-4 h-4 text-orange-600" />
+                          Issues Found
+                        </h3>
+                        <ul className="space-y-2">
+                          {codeAnalysis.issues.map((issue, idx) => (
+                            <li key={idx} className="text-sm flex items-start gap-2 p-2 rounded bg-orange-50 dark:bg-orange-950/30">
+                              <span className="text-orange-600 mt-0.5 flex-shrink-0">⚠</span>
+                              <span>{issue}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {codeAnalysis.suggestions.length > 0 && (
+                      <div>
+                        <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                          <Sparkle weight="fill" className="w-4 h-4 text-blue-600" />
+                          Improvement Suggestions
+                        </h3>
+                        <ul className="space-y-2">
+                          {codeAnalysis.suggestions.map((suggestion, idx) => (
+                            <li key={idx} className="text-sm flex items-start gap-2 p-2 rounded bg-blue-50 dark:bg-blue-950/30">
+                              <span className="text-blue-600 mt-0.5 flex-shrink-0">→</span>
+                              <span>{suggestion}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                   <div className="flex items-start gap-3">
@@ -1644,6 +1884,14 @@ Make sure the enhancement is production-ready and well-integrated.`
             <CardFooter className="flex gap-3">
               <Button variant="outline" onClick={() => setStep('customize')}>
                 Regenerate
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={analyzeGeneratedCode} 
+                disabled={isGenerating || !!codeAnalysis}
+              >
+                <Brain className="mr-2" weight="fill" />
+                {codeAnalysis ? 'Analysis Complete' : 'Analyze Code Quality'}
               </Button>
               <Button variant="outline" onClick={() => setStep('enhance')}>
                 <Sparkle className="mr-2" weight="fill" />
