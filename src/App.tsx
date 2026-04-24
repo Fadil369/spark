@@ -50,11 +50,11 @@ function App() {
       case 'story':
         return <StoryPhase journey={journey} onComplete={handlePhaseComplete} />
       case 'brand':
-        return <BrandPhase journey={journey} />
+        return <BrandPhase journey={journey} onComplete={handlePhaseComplete} />
       case 'prd':
         return <PRDPhase journey={journey} onComplete={handlePhaseComplete} />
       case 'code':
-        return <CodePhase journey={journey} />
+        return <CodePhase journey={journey} onComplete={handlePhaseComplete} />
       case 'github':
         return <GitHubPhase journey={journey} />
     }
