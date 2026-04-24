@@ -3,7 +3,7 @@ export type Language = 'en' | 'ar'
 export const translations = {
   en: {
     // App Header
-    appTitle: 'HealFounder',
+    appTitle: 'Spark الشرارة',
     appSubtitle: 'Build your healthcare startup',
     backToDashboard: 'Back to Dashboard',
 
@@ -355,7 +355,7 @@ export const translations = {
 
     // Welcome Screen
     welcome: {
-      title: 'Welcome to HealFounder',
+      title: 'Welcome to Spark الشرارة',
       subtitle: 'Your gamified journey to build a healthcare startup, from idea to GitHub with AI assistance',
       aiPowered: 'AI-Powered',
       gamifiedProgress: 'Gamified Progress',
@@ -367,7 +367,7 @@ export const translations = {
 
   ar: {
     // App Header
-    appTitle: 'هيل فاوندر',
+    appTitle: 'Spark الشرارة',
     appSubtitle: 'ابنِ شركتك الناشئة في الرعاية الصحية',
     backToDashboard: 'العودة للوحة التحكم',
 
@@ -719,7 +719,7 @@ export const translations = {
 
     // Welcome Screen
     welcome: {
-      title: 'مرحباً بك في هيل فاوندر',
+      title: 'مرحباً بك في Spark الشرارة',
       subtitle: 'رحلتك المُبتكرة لبناء شركة ناشئة في الرعاية الصحية، من الفكرة إلى GitHub بمساعدة الذكاء الاصطناعي',
       aiPowered: 'مدعوم بالذكاء الاصطناعي',
       gamifiedProgress: 'تقدم محفّز',
