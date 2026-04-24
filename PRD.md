@@ -34,11 +34,11 @@ This is a multi-phase application with persistent state, AI integration via Spar
 - Success criteria: Complete story with problem, impact, vision that scores above threshold for healthcare specificity
 
 **Phase 3: Brand Studio**
-- Functionality: AI name generation from healthcare vocabulary, color palette selector, tagline generator, logo icon picker
-- Purpose: Create instant visual identity without design skills
+- Functionality: AI-powered brand personality quiz, personalized name generation from healthcare vocabulary, color palette selector, tagline generator, logo icon picker
+- Purpose: Create instant visual identity without design skills, guided by personality insights
 - Trigger: Complete Story phase
-- Progression: Generate names → Pick favorite → Select color scheme → Choose icon → Generate taglines → Finalize brand → Unlock PRD
-- Success criteria: User has complete brand kit (name, colors, logo, tagline) stored as JSON
+- Progression: Complete personality quiz (6 questions) → AI analyzes responses → Generate personalized names → Pick favorite → Select color scheme → Choose icon → Generate taglines → Finalize brand → Unlock PRD
+- Success criteria: User has complete brand kit (name, colors, logo, tagline, personality profile) stored as JSON
 
 **Phase 4: PRD Workshop**
 - Functionality: Section-by-section PRD builder with templates, AI co-author for each section, feature card swiper, regulatory checklist

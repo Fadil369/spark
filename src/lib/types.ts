@@ -28,6 +28,15 @@ export interface Story {
   timestamp: number
 }
 
+export interface BrandPersonality {
+  archetype: string
+  tone: string[]
+  values: string[]
+  targetFeeling: string
+  colorPreference: string
+  styleDirection: string
+}
+
 export interface Brand {
   name: string
   tagline: string
@@ -37,6 +46,7 @@ export interface Brand {
     accent: string
   }
   logo: string
+  personality?: BrandPersonality
   timestamp: number
 }
 
