@@ -12,6 +12,7 @@ import { completePhase } from '@/lib/game'
 import { Progress } from '@/components/ui/progress'
 import { AILoadingScreen } from '@/components/AILoadingScreen'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { LiveCodePreview } from '@/components/LiveCodePreview'
 
 interface CompletionPhaseProps {
   journey: Journey
@@ -1742,6 +1743,8 @@ Make sure the enhancement is production-ready and well-integrated.`
               </div>
             </CardContent>
           </Card>
+
+          <LiveCodePreview files={generatedCode.files} />
 
           <Card>
             <CardHeader>
