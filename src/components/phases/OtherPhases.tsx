@@ -1140,9 +1140,27 @@ Be specific to this healthcare context, template type, and chosen framework.`
 
       const response = await window.spark.llm(prompt, 'gpt-4o', true)
       const insights = JSON.parse(response)
-      setAiInsights(insights)
+      
+      const normalizeArray = (arr: any[]): string[] => {
+        if (!Array.isArray(arr)) return []
+        return arr.map(item => {
+          if (typeof item === 'string') return item
+          if (item && typeof item === 'object') {
+            return item.recommendation || item.reason || item.note || item.consideration || JSON.stringify(item)
+          }
+          return String(item)
+        })
+      }
+      
+      setAiInsights({
+        recommendations: normalizeArray(insights.recommendations || []),
+        technicalConsiderations: normalizeArray(insights.technicalConsiderations || []),
+        securityNotes: normalizeArray(insights.securityNotes || []),
+        architectureScore: typeof insights.architectureScore === 'number' ? insights.architectureScore : 70
+      })
     } catch (error) {
       console.error('Failed to analyze requirements:', error)
+      toast.error('Failed to analyze requirements')
     } finally {
       setIsGenerating(false)
     }
@@ -1184,8 +1202,27 @@ Be specific and actionable in your analysis.`
 
       const response = await window.spark.llm(prompt, 'gpt-4o', true)
       const analysis = JSON.parse(response)
-      setCodeAnalysis(analysis)
-      toast.success('Code analysis complete!')
+      
+      const normalizeArray = (arr: any[]): string[] => {
+        if (!Array.isArray(arr)) return []
+        return arr.map(item => {
+          if (typeof item === 'string') return item
+          if (item && typeof item === 'object') {
+            return item.recommendation || item.reason || item.issue || item.suggestion || JSON.stringify(item)
+          }
+          return String(item)
+        })
+      }
+      
+      setCodeAnalysis({
+        quality: typeof analysis.quality === 'number' ? analysis.quality : 70,
+        accessibility: typeof analysis.accessibility === 'number' ? analysis.accessibility : 70,
+        security: typeof analysis.security === 'number' ? analysis.security : 70,
+        performance: typeof analysis.performance === 'number' ? analysis.performance : 70,
+        issues: normalizeArray(analysis.issues || []),
+        suggestions: normalizeArray(analysis.suggestions || [])
+      })
+      successToast('Code analysis complete!')
     } catch (error) {
       console.error('Failed to analyze code:', error)
       toast.error('Code analysis failed')
@@ -1295,19 +1332,28 @@ Make the code immediately usable as an MVP foundation.`
       const response = await window.spark.llm(prompt, 'gpt-4o', true)
       const result = JSON.parse(response)
 
+      if (!result.files || !Array.isArray(result.files) || result.files.length === 0) {
+        throw new Error('Invalid response: No files generated')
+      }
+
+      const validatedFiles = result.files.map((file: any) => ({
+        path: file.path || 'untitled.txt',
+        content: file.content || ''
+      }))
+
       const code: GeneratedCode = {
         template: selectedTemplate,
-        files: result.files || [],
+        files: validatedFiles,
         previewUrl: undefined,
         timestamp: Date.now()
       }
 
       setGeneratedCode(code)
       setStep('preview')
-      toast.success('Code generated successfully! 🚀')
+      successToast('Code generated successfully! 🚀')
     } catch (error) {
-      toast.error('Failed to generate code. Please try again.')
-      console.error(error)
+      console.error('Code generation error:', error)
+      toast.error(`Failed to generate code: ${error instanceof Error ? error.message : 'Unknown error'}`)
       setStep('customize')
     } finally {
       setIsGenerating(false)
@@ -1519,7 +1565,7 @@ Make sure the enhancement is production-ready and well-integrated.`
                     {aiInsights.recommendations.map((rec, idx) => (
                       <li key={idx} className="text-sm flex items-start gap-2">
                         <span className="text-accent mt-0.5 flex-shrink-0">✓</span>
-                        <span>{typeof rec === 'string' ? rec : (rec as any).recommendation || JSON.stringify(rec)}</span>
+                        <span>{rec}</span>
                       </li>
                     ))}
                   </ul>
@@ -1533,7 +1579,7 @@ Make sure the enhancement is production-ready and well-integrated.`
                     {aiInsights.technicalConsiderations.map((note, idx) => (
                       <li key={idx} className="text-sm flex items-start gap-2">
                         <span className="text-blue-600 mt-0.5 flex-shrink-0">→</span>
-                        <span>{typeof note === 'string' ? note : (note as any).recommendation || (note as any).consideration || JSON.stringify(note)}</span>
+                        <span>{note}</span>
                       </li>
                     ))}
                   </ul>
@@ -1547,7 +1593,7 @@ Make sure the enhancement is production-ready and well-integrated.`
                     {aiInsights.securityNotes.map((note, idx) => (
                       <li key={idx} className="text-sm flex items-start gap-2">
                         <span className="text-orange-600 mt-0.5 flex-shrink-0">⚠</span>
-                        <span>{typeof note === 'string' ? note : (note as any).recommendation || (note as any).note || JSON.stringify(note)}</span>
+                        <span>{note}</span>
                       </li>
                     ))}
                   </ul>
@@ -1833,7 +1879,7 @@ Make sure the enhancement is production-ready and well-integrated.`
                           {codeAnalysis.issues.map((issue, idx) => (
                             <li key={idx} className="text-sm flex items-start gap-2 p-2 rounded bg-orange-50 dark:bg-orange-950/30">
                               <span className="text-orange-600 mt-0.5 flex-shrink-0">⚠</span>
-                              <span>{typeof issue === 'string' ? issue : (issue as any).recommendation || (issue as any).issue || JSON.stringify(issue)}</span>
+                              <span>{issue}</span>
                             </li>
                           ))}
                         </ul>
@@ -1850,7 +1896,7 @@ Make sure the enhancement is production-ready and well-integrated.`
                           {codeAnalysis.suggestions.map((suggestion, idx) => (
                             <li key={idx} className="text-sm flex items-start gap-2 p-2 rounded bg-blue-50 dark:bg-blue-950/30">
                               <span className="text-blue-600 mt-0.5 flex-shrink-0">→</span>
-                              <span>{typeof suggestion === 'string' ? suggestion : (suggestion as any).recommendation || (suggestion as any).suggestion || JSON.stringify(suggestion)}</span>
+                              <span>{suggestion}</span>
                             </li>
                           ))}
                         </ul>
