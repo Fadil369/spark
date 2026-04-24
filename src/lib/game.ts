@@ -1,4 +1,4 @@
-import { Journey, GameState, PhaseKey, PHASE_CONFIG, BADGES, Badge } from './types'
+import { Journey, GameState, PhaseKey, PHASE_CONFIG, BADGES } from './types'
 
 export function createNewJourney(): Journey {
   return {
@@ -32,12 +32,31 @@ export function getXPForNextLevel(level: number): number {
   return level * 200
 }
 
+export function updateStreak(gameState: GameState): GameState {
+  const today = new Date().toISOString().split('T')[0]
+  const lastActive = gameState.lastActiveDate
+
+  if (lastActive === today) {
+    return gameState
+  }
+
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+  const isConsecutive = lastActive === yesterday
+
+  return {
+    ...gameState,
+    streakDays: isConsecutive ? gameState.streakDays + 1 : 1,
+    lastActiveDate: today
+  }
+}
+
 export function completePhase(journey: Journey, phase: PhaseKey): Journey {
   const updated = { ...journey }
   updated.phases[phase].completed = true
   updated.updatedAt = Date.now()
   
   const phaseXP = PHASE_CONFIG[phase].xp
+  updated.gameState = updateStreak(updated.gameState)
   updated.gameState.xp += phaseXP
   updated.gameState.level = calculateLevel(updated.gameState.xp)
   
@@ -94,3 +113,4 @@ export function getPhaseOrder(): PhaseKey[] {
 export function formatXP(xp: number): string {
   return xp.toLocaleString()
 }
+

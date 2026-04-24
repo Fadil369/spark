@@ -6,13 +6,15 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Sparkle, ArrowRight } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import { AILoadingScreen } from '@/components/AILoadingScreen'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface BrainstormPhaseProps {
   journey: Journey
   onComplete: (concept: ConceptCard) => void
 }
 
-const HEALTHCARE_THEMES = [
+const HEALTHCARE_THEMES_EN = [
   'medication adherence',
   'chronic disease management',
   'mental health support',
@@ -25,6 +27,19 @@ const HEALTHCARE_THEMES = [
   'appointment scheduling'
 ]
 
+const HEALTHCARE_THEMES_AR = [
+  'الالتزام بتناول الأدوية',
+  'إدارة الأمراض المزمنة',
+  'دعم الصحة النفسية',
+  'تنسيق رعاية كبار السن',
+  'مشاركة المريض',
+  'إرهاق مقدمي الرعاية',
+  'محو الأمية الصحية',
+  'التنقل في الرعاية',
+  'المراقبة عن بُعد',
+  'جدولة المواعيد'
+]
+
 export function BrainstormPhase({ journey, onComplete }: BrainstormPhaseProps) {
   const [input, setInput] = useState('')
   const [keywords, setKeywords] = useState<string[]>([])
@@ -32,9 +47,13 @@ export function BrainstormPhase({ journey, onComplete }: BrainstormPhaseProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [step, setStep] = useState<'input' | 'refine' | 'finalize'>('input')
 
+  const { language, t } = useLanguage()
+  const bt = t.brainstorm
+  const healthcareThemes = language === 'ar' ? HEALTHCARE_THEMES_AR : HEALTHCARE_THEMES_EN
+
   const handleGenerateIdeas = async () => {
     if (!input.trim()) {
-      toast.error('Please enter some healthcare problems or themes')
+      toast.error(language === 'ar' ? 'يرجى إدخال مشكلات أو مواضيع صحية' : 'Please enter some healthcare problems or themes')
       return
     }
 
@@ -46,9 +65,9 @@ export function BrainstormPhase({ journey, onComplete }: BrainstormPhaseProps) {
       const data = JSON.parse(response)
       setKeywords(data.keywords || [])
       setStep('refine')
-      toast.success('AI generated related healthcare concepts!')
+      toast.success(language === 'ar' ? 'تم توليد المفاهيم الصحية بنجاح!' : 'AI generated related healthcare concepts!')
     } catch (error) {
-      toast.error('Failed to generate ideas. Please try again.')
+      toast.error(language === 'ar' ? 'فشل توليد الأفكار. يرجى المحاولة مجدداً.' : 'Failed to generate ideas. Please try again.')
       console.error(error)
     } finally {
       setIsGenerating(false)
@@ -74,9 +93,9 @@ export function BrainstormPhase({ journey, onComplete }: BrainstormPhaseProps) {
         keywords: [...keywords, input]
       })
       setStep('finalize')
-      toast.success('Concept refined successfully!')
+      toast.success(language === 'ar' ? 'تم تحسين المفهوم بنجاح!' : 'Concept refined successfully!')
     } catch (error) {
-      toast.error('Failed to refine concept. Please try again.')
+      toast.error(language === 'ar' ? 'فشل تحسين المفهوم. يرجى المحاولة مجدداً.' : 'Failed to refine concept. Please try again.')
       console.error(error)
     } finally {
       setIsGenerating(false)
@@ -85,7 +104,7 @@ export function BrainstormPhase({ journey, onComplete }: BrainstormPhaseProps) {
 
   const handleComplete = () => {
     if (!concept.problem || !concept.targetUsers || !concept.solution) {
-      toast.error('Please complete all concept fields')
+      toast.error(language === 'ar' ? 'يرجى إكمال جميع حقول المفهوم' : 'Please complete all concept fields')
       return
     }
 
@@ -98,37 +117,56 @@ export function BrainstormPhase({ journey, onComplete }: BrainstormPhaseProps) {
     }
 
     onComplete(finalConcept)
-    toast.success('Brainstorm phase complete! 🎉')
+  }
+
+  if (isGenerating) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center space-y-2 mb-8">
+          <h1 className="text-4xl font-bold font-heading">{bt.title}</h1>
+          <p className="text-lg text-muted-foreground">{bt.subtitle}</p>
+        </div>
+        <Card>
+          <CardContent className="py-8">
+            <AILoadingScreen
+              isVisible={true}
+              language={language}
+              message={step === 'input'
+                ? (language === 'ar' ? 'جارٍ توليد المفاهيم...' : 'Generating concepts...')
+                : (language === 'ar' ? 'جارٍ تحسين المفهوم...' : 'Refining your concept...')}
+            />
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="text-center space-y-2">
-        <h1 className="text-4xl font-bold font-heading">The Idea Forge</h1>
-        <p className="text-lg text-muted-foreground">Extract healthcare problems into crisp startup concepts</p>
+        <h1 className="text-4xl font-bold font-heading">{bt.title}</h1>
+        <p className="text-lg text-muted-foreground">{bt.subtitle}</p>
       </div>
 
       {step === 'input' && (
         <Card>
           <CardHeader>
-            <CardTitle>What healthcare problems are you passionate about?</CardTitle>
-            <CardDescription>
-              Describe frustrations, unmet needs, or challenges you've observed in healthcare
-            </CardDescription>
+            <CardTitle>{bt.whatProblem}</CardTitle>
+            <CardDescription>{bt.describeFrustrations}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Textarea
               id="brainstorm-input"
-              placeholder="e.g., My grandmother struggles to remember when to take her medications, leading to hospital readmissions..."
+              placeholder={bt.placeholder}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               rows={6}
               className="resize-none"
             />
             <div className="space-y-2">
-              <p className="text-sm font-medium">Or try one of these healthcare themes:</p>
+              <p className="text-sm font-medium">{bt.tryThemes}</p>
               <div className="flex flex-wrap gap-2">
-                {HEALTHCARE_THEMES.map((theme) => (
+                {healthcareThemes.map((theme) => (
                   <Badge
                     key={theme}
                     variant="secondary"
@@ -147,14 +185,8 @@ export function BrainstormPhase({ journey, onComplete }: BrainstormPhaseProps) {
               disabled={isGenerating}
               className="w-full"
             >
-              {isGenerating ? (
-                <>Generating ideas...</>
-              ) : (
-                <>
-                  <Sparkle className="mr-2" weight="fill" />
-                  Generate Related Concepts
-                </>
-              )}
+              <Sparkle className="mr-2" weight="fill" />
+              {bt.generateConcepts}
             </Button>
           </CardFooter>
         </Card>
@@ -163,8 +195,8 @@ export function BrainstormPhase({ journey, onComplete }: BrainstormPhaseProps) {
       {step === 'refine' && (
         <Card>
           <CardHeader>
-            <CardTitle>AI-Generated Healthcare Concepts</CardTitle>
-            <CardDescription>Review these related ideas and themes</CardDescription>
+            <CardTitle>{bt.aiGeneratedConcepts}</CardTitle>
+            <CardDescription>{bt.relatedIdeas}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2 mb-6">
@@ -175,22 +207,16 @@ export function BrainstormPhase({ journey, onComplete }: BrainstormPhaseProps) {
               ))}
             </div>
             <p className="text-sm text-muted-foreground mb-4">
-              Original input: <span className="text-foreground font-medium">{input}</span>
+              {bt.originalInput} <span className="text-foreground font-medium">{input}</span>
             </p>
           </CardContent>
           <CardFooter className="flex gap-3">
             <Button variant="outline" onClick={() => setStep('input')}>
-              Start Over
+              {bt.startOver}
             </Button>
             <Button onClick={handleRefineConcept} disabled={isGenerating} className="flex-1">
-              {isGenerating ? (
-                <>Refining concept...</>
-              ) : (
-                <>
-                  <Sparkle className="mr-2" weight="fill" />
-                  Refine into Startup Concept
-                </>
-              )}
+              <Sparkle className="mr-2" weight="fill" />
+              {bt.refineConcept}
             </Button>
           </CardFooter>
         </Card>
@@ -199,12 +225,12 @@ export function BrainstormPhase({ journey, onComplete }: BrainstormPhaseProps) {
       {step === 'finalize' && (
         <Card>
           <CardHeader>
-            <CardTitle>Your Startup Concept</CardTitle>
-            <CardDescription>Review and finalize your concept card</CardDescription>
+            <CardTitle>{bt.yourConcept}</CardTitle>
+            <CardDescription>{bt.reviewFinalize}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-primary">Problem</label>
+              <label className="text-sm font-semibold text-primary">{bt.problem}</label>
               <Textarea
                 value={concept.problem || ''}
                 onChange={(e) => setConcept({ ...concept, problem: e.target.value })}
@@ -213,7 +239,7 @@ export function BrainstormPhase({ journey, onComplete }: BrainstormPhaseProps) {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-primary">Target Users</label>
+              <label className="text-sm font-semibold text-primary">{bt.targetUsers}</label>
               <Textarea
                 value={concept.targetUsers || ''}
                 onChange={(e) => setConcept({ ...concept, targetUsers: e.target.value })}
@@ -222,7 +248,7 @@ export function BrainstormPhase({ journey, onComplete }: BrainstormPhaseProps) {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-primary">Solution Vision</label>
+              <label className="text-sm font-semibold text-primary">{bt.solutionVision}</label>
               <Textarea
                 value={concept.solution || ''}
                 onChange={(e) => setConcept({ ...concept, solution: e.target.value })}
@@ -233,10 +259,10 @@ export function BrainstormPhase({ journey, onComplete }: BrainstormPhaseProps) {
           </CardContent>
           <CardFooter className="flex gap-3">
             <Button variant="outline" onClick={() => setStep('input')}>
-              Start Over
+              {bt.startOver}
             </Button>
             <Button onClick={handleComplete} className="flex-1">
-              Complete Brainstorm
+              {bt.completeBrainstorm}
               <ArrowRight className="ml-2" weight="bold" />
             </Button>
           </CardFooter>
@@ -245,3 +271,4 @@ export function BrainstormPhase({ journey, onComplete }: BrainstormPhaseProps) {
     </div>
   )
 }
+

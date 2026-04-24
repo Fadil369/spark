@@ -1,6 +1,7 @@
 import { PhaseKey, Journey, PHASE_CONFIG } from '@/lib/types'
 import { getPhaseOrder } from '@/lib/game'
 import { cn } from '@/lib/utils'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { 
   Lightbulb, 
   BookOpen, 
@@ -29,6 +30,7 @@ const ICON_MAP: Record<string, PhosphorIcon> = {
 
 export function PhaseNavigation({ journey, onPhaseSelect }: PhaseNavigationProps) {
   const phases = getPhaseOrder()
+  const { t } = useLanguage()
 
   return (
     <div className="w-full bg-card border-b border-border">
@@ -41,6 +43,7 @@ export function PhaseNavigation({ journey, onPhaseSelect }: PhaseNavigationProps
             const isActive = journey.currentPhase === phaseKey
             const isCompleted = status.completed
             const isLocked = !status.unlocked
+            const phaseName = t.phases[phaseKey]
 
             return (
               <div key={phaseKey} className="flex items-center flex-1">
@@ -77,7 +80,7 @@ export function PhaseNavigation({ journey, onPhaseSelect }: PhaseNavigationProps
                       isCompleted && !isActive && 'text-foreground',
                       !isCompleted && !isActive && 'text-muted-foreground'
                     )}>
-                      {config.name}
+                      {phaseName}
                     </div>
                   </div>
                 </button>
@@ -100,6 +103,7 @@ export function PhaseNavigation({ journey, onPhaseSelect }: PhaseNavigationProps
             const isActive = journey.currentPhase === phaseKey
             const isCompleted = status.completed
             const isLocked = !status.unlocked
+            const phaseName = t.phases[phaseKey]
 
             return (
               <button
@@ -134,7 +138,7 @@ export function PhaseNavigation({ journey, onPhaseSelect }: PhaseNavigationProps
                     'font-semibold',
                     isActive && 'text-primary'
                   )}>
-                    {config.name}
+                    {phaseName}
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {config.description}
@@ -148,3 +152,4 @@ export function PhaseNavigation({ journey, onPhaseSelect }: PhaseNavigationProps
     </div>
   )
 }
+

@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { completePhase } from '@/lib/game'
 import { Progress } from '@/components/ui/progress'
+import { AILoadingScreen } from '@/components/AILoadingScreen'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface CompletionPhaseProps {
   journey: Journey
@@ -28,6 +30,9 @@ export function StoryPhase({ journey, onComplete }: CompletionPhaseProps) {
   const [generatedNarrative, setGeneratedNarrative] = useState('')
   const [aiScore, setAiScore] = useState<{ clarity: number; emotion: number; healthcare: number } | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+
+  const { language, t } = useLanguage()
+  const st = t.story
 
   useEffect(() => {
     if (journey.story) {
@@ -129,7 +134,7 @@ Only return the JSON object with these three numeric scores.`
       onComplete(completedJourney)
     }
     
-    toast.success('Story phase complete! 🎉')
+    toast.success(language === 'ar' ? 'مرحلة القصة مكتملة! 🎉' : 'Story phase complete! 🎉')
   }
 
   const getScoreColor = (score: number) => {
@@ -139,22 +144,42 @@ Only return the JSON object with these three numeric scores.`
   }
 
   const getScoreLabel = (score: number) => {
-    if (score >= 80) return 'Excellent'
-    if (score >= 60) return 'Good'
-    return 'Needs Work'
+    if (score >= 80) return st.excellent
+    if (score >= 60) return st.good
+    return st.needsWork
+  }
+
+  if (isGenerating) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center space-y-2 mb-8">
+          <h1 className="text-4xl font-bold font-heading">{st.title}</h1>
+          <p className="text-lg text-muted-foreground">{st.subtitle}</p>
+        </div>
+        <Card>
+          <CardContent className="py-8">
+            <AILoadingScreen
+              isVisible={true}
+              language={language}
+              message={language === 'ar' ? 'جارٍ توليد قصتك...' : 'Crafting your founder story...'}
+            />
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="text-center space-y-2">
-        <h1 className="text-4xl font-bold font-heading">The Story Builder</h1>
-        <p className="text-lg text-muted-foreground">Transform your concept into a compelling founder narrative</p>
+        <h1 className="text-4xl font-bold font-heading">{st.title}</h1>
+        <p className="text-lg text-muted-foreground">{st.subtitle}</p>
       </div>
 
       {journey.concept && (
         <Card className="bg-muted/50">
           <CardContent className="pt-6">
-            <p className="text-sm font-medium text-muted-foreground mb-2">Your Concept</p>
+            <p className="text-sm font-medium text-muted-foreground mb-2">{st.yourConcept}</p>
             <p className="text-foreground">{journey.concept.problem}</p>
           </CardContent>
         </Card>
@@ -163,8 +188,8 @@ Only return the JSON object with these three numeric scores.`
       {step === 'template' && (
         <Card>
           <CardHeader>
-            <CardTitle>Choose Your Story Tone</CardTitle>
-            <CardDescription>Select the narrative style that fits your vision</CardDescription>
+            <CardTitle>{st.chooseStoryTone}</CardTitle>
+            <CardDescription>{st.selectNarrativeStyle}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -176,9 +201,9 @@ Only return the JSON object with these three numeric scores.`
                     : 'border-border hover:border-primary/50'
                 }`}
               >
-                <h3 className="font-semibold text-lg mb-2">Empathetic</h3>
+                <h3 className="font-semibold text-lg mb-2">{st.empathetic}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Warm, human-centered storytelling that emphasizes patient experiences and emotional impact
+                  {st.empatheticDesc}
                 </p>
               </button>
               <button
@@ -189,16 +214,16 @@ Only return the JSON object with these three numeric scores.`
                     : 'border-border hover:border-primary/50'
                 }`}
               >
-                <h3 className="font-semibold text-lg mb-2">Scientific</h3>
+                <h3 className="font-semibold text-lg mb-2">{st.scientific}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Data-driven narrative focusing on evidence, clinical outcomes, and systemic solutions
+                  {st.scientificDesc}
                 </p>
               </button>
             </div>
           </CardContent>
           <CardFooter>
             <Button onClick={() => setStep('fill')} className="w-full">
-              Continue to Story Elements
+              {st.continueToElements}
               <ArrowRight className="ml-2" weight="bold" />
             </Button>
           </CardFooter>
@@ -208,14 +233,14 @@ Only return the JSON object with these three numeric scores.`
       {step === 'fill' && (
         <Card>
           <CardHeader>
-            <CardTitle>Fill in Your Story Elements</CardTitle>
+            <CardTitle>{st.fillStoryElements}</CardTitle>
             <CardDescription>
-              Answer these prompts to build your founder narrative
+              {st.fillElementsSubtitle}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <label className="text-sm font-semibold">Who is the patient or person affected?</label>
+              <label className="text-sm font-semibold">{st.targetPatient}</label>
               <Textarea
                 id="target-patient"
                 placeholder="e.g., elderly patients managing multiple chronic conditions, busy working parents..."
@@ -226,7 +251,7 @@ Only return the JSON object with these three numeric scores.`
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold">What is the core healthcare problem?</label>
+              <label className="text-sm font-semibold">{st.coreProblem}</label>
               <Textarea
                 id="core-problem"
                 placeholder="e.g., medication non-adherence leads to 125,000 deaths annually and costs $300B..."
@@ -237,7 +262,7 @@ Only return the JSON object with these three numeric scores.`
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold">What is the real-world impact?</label>
+              <label className="text-sm font-semibold">{st.realWorldImpact}</label>
               <Textarea
                 id="impact"
                 placeholder="e.g., preventable hospital readmissions, caregiver burnout, quality of life..."
@@ -248,7 +273,7 @@ Only return the JSON object with these three numeric scores.`
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold">What is your solution vision?</label>
+              <label className="text-sm font-semibold">{st.solutionVision}</label>
               <Textarea
                 id="solution-vision"
                 placeholder="e.g., an AI-powered companion that makes medication management feel like having a caring nurse..."
@@ -259,9 +284,9 @@ Only return the JSON object with these three numeric scores.`
             </div>
 
             <div className="space-y-3">
-              <label className="text-sm font-semibold">Adjust Narrative Tone</label>
+              <label className="text-sm font-semibold">{st.adjustTone}</label>
               <div className="flex items-center gap-4">
-                <span className="text-sm text-muted-foreground w-24">Empathetic</span>
+                <span className="text-sm text-muted-foreground w-24">{st.empathetic}</span>
                 <Slider
                   value={[tone === 'empathetic' ? 0 : 100]}
                   onValueChange={(value) => setTone(value[0] < 50 ? 'empathetic' : 'scientific')}
@@ -269,23 +294,17 @@ Only return the JSON object with these three numeric scores.`
                   step={1}
                   className="flex-1"
                 />
-                <span className="text-sm text-muted-foreground w-24 text-right">Scientific</span>
+                <span className="text-sm text-muted-foreground w-24 text-right">{st.scientific}</span>
               </div>
             </div>
           </CardContent>
           <CardFooter className="flex gap-3">
             <Button variant="outline" onClick={() => setStep('template')}>
-              Back
+              {t.back}
             </Button>
             <Button onClick={handleGenerateNarrative} disabled={isGenerating} className="flex-1">
-              {isGenerating ? (
-                <>Generating your story...</>
-              ) : (
-                <>
-                  <Sparkle className="mr-2" weight="fill" />
-                  Generate Founder Story
-                </>
-              )}
+              <Sparkle className="mr-2" weight="fill" />
+              {st.generateStory}
             </Button>
           </CardFooter>
         </Card>
@@ -295,8 +314,8 @@ Only return the JSON object with these three numeric scores.`
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Your Founder Story</CardTitle>
-              <CardDescription>Review and edit your generated narrative</CardDescription>
+              <CardTitle>{st.yourFounderStory}</CardTitle>
+              <CardDescription>{st.reviewEdit}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <ScrollArea className="h-[400px] rounded-lg border p-4">
@@ -309,13 +328,13 @@ Only return the JSON object with these three numeric scores.`
 
               {aiScore && (
                 <div className="space-y-3">
-                  <p className="text-sm font-semibold">AI Story Quality Score</p>
+                  <p className="text-sm font-semibold">{st.aiStoryScore}</p>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="text-center p-4 rounded-lg bg-muted/50">
                       <div className={`text-3xl font-bold ${getScoreColor(aiScore.clarity)}`}>
                         {aiScore.clarity}
                       </div>
-                      <div className="text-xs text-muted-foreground mt-1">Clarity</div>
+                      <div className="text-xs text-muted-foreground mt-1">{st.clarity}</div>
                       <Badge variant="outline" className="mt-2 text-xs">
                         {getScoreLabel(aiScore.clarity)}
                       </Badge>
@@ -324,7 +343,7 @@ Only return the JSON object with these three numeric scores.`
                       <div className={`text-3xl font-bold ${getScoreColor(aiScore.emotion)}`}>
                         {aiScore.emotion}
                       </div>
-                      <div className="text-xs text-muted-foreground mt-1">Emotion</div>
+                      <div className="text-xs text-muted-foreground mt-1">{st.emotion}</div>
                       <Badge variant="outline" className="mt-2 text-xs">
                         {getScoreLabel(aiScore.emotion)}
                       </Badge>
@@ -333,7 +352,7 @@ Only return the JSON object with these three numeric scores.`
                       <div className={`text-3xl font-bold ${getScoreColor(aiScore.healthcare)}`}>
                         {aiScore.healthcare}
                       </div>
-                      <div className="text-xs text-muted-foreground mt-1">Healthcare</div>
+                      <div className="text-xs text-muted-foreground mt-1">{st.healthcare}</div>
                       <Badge variant="outline" className="mt-2 text-xs">
                         {getScoreLabel(aiScore.healthcare)}
                       </Badge>
@@ -344,14 +363,14 @@ Only return the JSON object with these three numeric scores.`
             </CardContent>
             <CardFooter className="flex gap-3">
               <Button variant="outline" onClick={() => setStep('fill')}>
-                Edit Inputs
+                {st.editInputs}
               </Button>
               <Button variant="outline" onClick={handleGenerateNarrative} disabled={isGenerating}>
                 <Sparkle className="mr-2" weight="fill" />
-                Regenerate
+                {st.regenerate}
               </Button>
               <Button onClick={handleComplete} className="flex-1">
-                Complete Story Phase
+                {st.completeStory}
                 <ArrowRight className="ml-2" weight="bold" />
               </Button>
             </CardFooter>
