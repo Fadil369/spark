@@ -41,11 +41,11 @@ This is a multi-phase application with persistent state, AI integration via Spar
 - Success criteria: User has complete brand kit (name, colors, logo, tagline, personality profile) stored as JSON
 
 **Phase 4: PRD Workshop**
-- Functionality: Section-by-section PRD builder with personality-tailored templates, AI co-author that matches brand tone, feature card swiper, regulatory checklist
-- Purpose: Build investor-ready PRD without blank-page paralysis, customized to brand personality
+- Functionality: Section-by-section PRD builder with personality-tailored templates, AI co-author that matches brand tone, feature card swiper, regulatory checklist, PDF export with personality-matched formatting
+- Purpose: Build investor-ready PRD without blank-page paralysis, customized to brand personality, with professional PDF output for sharing
 - Trigger: Complete Brand phase
-- Progression: View personality profile → Navigate PRD sections → Use personality-tailored templates → AI drafts content matching brand tone → User edits inline → Check regulatory items → View completeness score → Save PRD → Unlock Code
-- Success criteria: All PRD sections filled with content matching brand personality, completeness meter shows "Investor Ready", document is structured and coherent
+- Progression: View personality profile → Navigate PRD sections → Use personality-tailored templates → AI drafts content matching brand tone → User edits inline → Check regulatory items → View completeness score → Export as formatted PDF → Save PRD → Unlock Code
+- Success criteria: All PRD sections filled with content matching brand personality, completeness meter shows "Investor Ready", document is structured and coherent, PDF export applies personality-specific styling and formatting
 
 **Phase 5: Code Generator**
 - Functionality: Architecture template selection based on PRD, customization with brand/content, live preview of generated site

@@ -1,0 +1,371 @@
+import jsPDF from 'jspdf'
+import { PRD, BrandPersonality } from './types'
+
+interface ExportOptions {
+  brandName?: string
+  tagline?: string
+  personality?: BrandPersonality
+  colors?: {
+    primary: string
+    secondary: string
+    accent: string
+  }
+}
+
+const parseOklch = (oklchStr: string): { l: number; c: number; h: number } => {
+  const match = oklchStr.match(/oklch\(([\d.]+)\s+([\d.]+)\s+([\d.]+)/)
+  if (!match) return { l: 0.5, c: 0.1, h: 200 }
+  return {
+    l: parseFloat(match[1]),
+    c: parseFloat(match[2]),
+    h: parseFloat(match[3])
+  }
+}
+
+const oklchToRgb = (l: number, c: number, h: number): [number, number, number] => {
+  const hRad = (h * Math.PI) / 180
+  const a = c * Math.cos(hRad)
+  const b = c * Math.sin(hRad)
+  
+  let y = (l + 0.16) / 1.16
+  let x, z
+  
+  if (l > 0.08) {
+    y = Math.pow(y, 3)
+  } else {
+    y = l / 903.3
+  }
+  
+  x = y * (a / 500 + 1)
+  z = y * (1 - b / 200)
+  
+  x = x > 0.008856 ? Math.pow(x, 3) : (x - 16 / 116) / 7.787
+  z = z > 0.008856 ? Math.pow(z, 3) : (z - 16 / 116) / 7.787
+  
+  x *= 95.047
+  y *= 100.000
+  z *= 108.883
+  
+  let r = x * 0.032406 + y * -0.015372 + z * -0.004986
+  let g = x * -0.009689 + y * 0.018758 + z * 0.000415
+  let bl = x * 0.000557 + y * -0.002040 + z * 0.010570
+  
+  r = r > 0.0031308 ? 1.055 * Math.pow(r, 1 / 2.4) - 0.055 : 12.92 * r
+  g = g > 0.0031308 ? 1.055 * Math.pow(g, 1 / 2.4) - 0.055 : 12.92 * g
+  bl = bl > 0.0031308 ? 1.055 * Math.pow(bl, 1 / 2.4) - 0.055 : 12.92 * bl
+  
+  return [
+    Math.max(0, Math.min(255, Math.round(r * 255))),
+    Math.max(0, Math.min(255, Math.round(g * 255))),
+    Math.max(0, Math.min(255, Math.round(bl * 255)))
+  ]
+}
+
+const getPersonalityStyles = (personality?: BrandPersonality) => {
+  if (!personality) {
+    return {
+      headerStyle: 'professional',
+      useDecorators: false,
+      fontWeight: 'normal',
+      spacing: 'standard'
+    }
+  }
+
+  const archetype = personality.archetype.toLowerCase()
+  
+  if (archetype.includes('caregiver')) {
+    return {
+      headerStyle: 'warm',
+      useDecorators: true,
+      fontWeight: 'gentle',
+      spacing: 'generous',
+      emphasisColor: 'soft'
+    }
+  } else if (archetype.includes('innovator')) {
+    return {
+      headerStyle: 'bold',
+      useDecorators: true,
+      fontWeight: 'strong',
+      spacing: 'compact',
+      emphasisColor: 'vibrant'
+    }
+  } else if (archetype.includes('hero')) {
+    return {
+      headerStyle: 'powerful',
+      useDecorators: true,
+      fontWeight: 'strong',
+      spacing: 'standard',
+      emphasisColor: 'strong'
+    }
+  } else if (archetype.includes('sage')) {
+    return {
+      headerStyle: 'scholarly',
+      useDecorators: false,
+      fontWeight: 'normal',
+      spacing: 'generous',
+      emphasisColor: 'subtle'
+    }
+  }
+  
+  return {
+    headerStyle: 'professional',
+    useDecorators: false,
+    fontWeight: 'normal',
+    spacing: 'standard'
+  }
+}
+
+export const exportPRDToPDF = (prd: PRD, options: ExportOptions = {}) => {
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4'
+  })
+
+  const pageWidth = doc.internal.pageSize.getWidth()
+  const pageHeight = doc.internal.pageSize.getHeight()
+  const margin = 20
+  const contentWidth = pageWidth - 2 * margin
+  let yPosition = margin
+
+  const primaryColor = options.colors?.primary ? parseOklch(options.colors.primary) : { l: 0.68, c: 0.14, h: 340 }
+  const accentColor = options.colors?.accent ? parseOklch(options.colors.accent) : { l: 0.75, c: 0.12, h: 180 }
+  
+  const primaryRgb = oklchToRgb(primaryColor.l, primaryColor.c, primaryColor.h)
+  const accentRgb = oklchToRgb(accentColor.l, accentColor.c, accentColor.h)
+
+  const styles = getPersonalityStyles(options.personality)
+
+  const addNewPageIfNeeded = (requiredSpace: number) => {
+    if (yPosition + requiredSpace > pageHeight - margin) {
+      doc.addPage()
+      yPosition = margin
+      return true
+    }
+    return false
+  }
+
+  const wrapText = (text: string, maxWidth: number): string[] => {
+    return doc.splitTextToSize(text, maxWidth) as string[]
+  }
+
+  doc.setFillColor(primaryRgb[0], primaryRgb[1], primaryRgb[2])
+  
+  if (styles.useDecorators) {
+    doc.rect(0, 0, pageWidth, 50, 'F')
+    doc.setFillColor(accentRgb[0], accentRgb[1], accentRgb[2])
+    doc.rect(0, 45, pageWidth, 5, 'F')
+  } else {
+    doc.rect(0, 0, pageWidth, 40, 'F')
+  }
+
+  doc.setTextColor(255, 255, 255)
+  doc.setFontSize(28)
+  doc.setFont('helvetica', 'bold')
+  
+  const title = options.brandName || 'Product Requirements Document'
+  doc.text(title, margin, 25)
+
+  if (options.tagline) {
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'normal')
+    doc.text(options.tagline, margin, 35)
+  }
+
+  yPosition = styles.useDecorators ? 60 : 50
+
+  if (options.personality) {
+    addNewPageIfNeeded(25)
+    
+    doc.setFillColor(245, 245, 250)
+    doc.rect(margin, yPosition, contentWidth, 20, 'F')
+    
+    doc.setTextColor(60, 60, 80)
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Brand Personality', margin + 5, yPosition + 7)
+    
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(9)
+    const personalityText = `${options.personality.archetype} • ${options.personality.tone.join(', ')} • ${options.personality.values.join(', ')}`
+    doc.text(personalityText, margin + 5, yPosition + 14)
+    
+    yPosition += 30
+  }
+
+  doc.setTextColor(40, 40, 40)
+
+  const sectionOrder = ['problem', 'solution', 'targetUsers', 'features', 'metrics', 'regulatory'] as const
+  
+  sectionOrder.forEach((sectionKey, index) => {
+    const section = prd.sections[sectionKey]
+    
+    if (!section || !section.content.trim()) return
+
+    addNewPageIfNeeded(40)
+
+    if (index > 0) {
+      yPosition += 8
+    }
+
+    if (styles.useDecorators && styles.headerStyle === 'bold') {
+      doc.setFillColor(primaryRgb[0], primaryRgb[1], primaryRgb[2])
+      doc.rect(margin - 5, yPosition - 2, 5, 10, 'F')
+    }
+
+    doc.setFontSize(16)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(primaryRgb[0], primaryRgb[1], primaryRgb[2])
+    doc.text(section.title, margin, yPosition)
+    yPosition += 10
+
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(40, 40, 40)
+
+    const lines = section.content.split('\n')
+    
+    lines.forEach((line) => {
+      if (line.trim() === '') {
+        yPosition += 3
+        return
+      }
+
+      if (line.startsWith('# ')) {
+        addNewPageIfNeeded(15)
+        doc.setFontSize(14)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(primaryRgb[0], primaryRgb[1], primaryRgb[2])
+        const heading = line.replace('# ', '')
+        doc.text(heading, margin, yPosition)
+        yPosition += 8
+        doc.setFontSize(10)
+        doc.setFont('helvetica', 'normal')
+        doc.setTextColor(40, 40, 40)
+      } else if (line.startsWith('## ')) {
+        addNewPageIfNeeded(12)
+        doc.setFontSize(12)
+        doc.setFont('helvetica', 'bold')
+        const subheading = line.replace('## ', '')
+        doc.text(subheading, margin, yPosition)
+        yPosition += 7
+        doc.setFontSize(10)
+        doc.setFont('helvetica', 'normal')
+      } else if (line.startsWith('### ')) {
+        addNewPageIfNeeded(10)
+        doc.setFontSize(11)
+        doc.setFont('helvetica', 'bold')
+        const subsubheading = line.replace('### ', '')
+        doc.text(subsubheading, margin, yPosition)
+        yPosition += 6
+        doc.setFontSize(10)
+        doc.setFont('helvetica', 'normal')
+      } else if (line.match(/^[-*]\s/)) {
+        addNewPageIfNeeded(8)
+        const bulletText = line.replace(/^[-*]\s/, '')
+        const wrappedLines = wrapText(bulletText, contentWidth - 8)
+        
+        doc.setFillColor(accentRgb[0], accentRgb[1], accentRgb[2])
+        doc.circle(margin + 2, yPosition - 1.5, 1, 'F')
+        
+        wrappedLines.forEach((wrappedLine: string, i: number) => {
+          doc.text(wrappedLine, margin + 5, yPosition)
+          if (i < wrappedLines.length - 1) {
+            yPosition += 5
+            addNewPageIfNeeded(5)
+          }
+        })
+        yPosition += 5
+      } else if (line.match(/^\d+\.\s/)) {
+        addNewPageIfNeeded(8)
+        const numberMatch = line.match(/^(\d+)\.\s(.+)/)
+        if (numberMatch) {
+          const number = numberMatch[1]
+          const text = numberMatch[2]
+          const wrappedLines = wrapText(text, contentWidth - 10)
+          
+          doc.setTextColor(primaryRgb[0], primaryRgb[1], primaryRgb[2])
+          doc.setFont('helvetica', 'bold')
+          doc.text(`${number}.`, margin, yPosition)
+          doc.setFont('helvetica', 'normal')
+          doc.setTextColor(40, 40, 40)
+          
+          wrappedLines.forEach((wrappedLine: string, i: number) => {
+            doc.text(wrappedLine, margin + 7, yPosition)
+            if (i < wrappedLines.length - 1) {
+              yPosition += 5
+              addNewPageIfNeeded(5)
+            }
+          })
+          yPosition += 5
+        }
+      } else if (line.match(/^\*\*(.+?)\*\*/)) {
+        addNewPageIfNeeded(6)
+        const boldText = line.replace(/\*\*(.+?)\*\*/g, '$1')
+        doc.setFont('helvetica', 'bold')
+        doc.text(boldText, margin, yPosition)
+        doc.setFont('helvetica', 'normal')
+        yPosition += 5
+      } else if (line.match(/^[-\[\]x\s]+/)) {
+        addNewPageIfNeeded(6)
+        const isChecked = line.includes('[x]') || line.includes('[X]')
+        const checkboxText = line.replace(/^[-\[\]x\sX]+/, '').trim()
+        
+        doc.setDrawColor(100, 100, 100)
+        doc.setLineWidth(0.3)
+        doc.rect(margin, yPosition - 3, 3, 3, 'S')
+        
+        if (isChecked) {
+          doc.setTextColor(primaryRgb[0], primaryRgb[1], primaryRgb[2])
+          doc.setFont('helvetica', 'bold')
+          doc.text('✓', margin + 0.5, yPosition - 0.5)
+          doc.setFont('helvetica', 'normal')
+          doc.setTextColor(40, 40, 40)
+        }
+        
+        const wrappedLines = wrapText(checkboxText, contentWidth - 8)
+        wrappedLines.forEach((wrappedLine: string) => {
+          doc.text(wrappedLine, margin + 5, yPosition)
+          yPosition += 5
+          addNewPageIfNeeded(5)
+        })
+      } else if (line.trim().length > 0) {
+        addNewPageIfNeeded(6)
+        const wrappedLines = wrapText(line, contentWidth)
+        wrappedLines.forEach((wrappedLine: string) => {
+          doc.text(wrappedLine, margin, yPosition)
+          yPosition += 5
+          addNewPageIfNeeded(5)
+        })
+      }
+    })
+
+    yPosition += styles.spacing === 'generous' ? 8 : styles.spacing === 'compact' ? 4 : 6
+  })
+
+  const totalPages = doc.getNumberOfPages()
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i)
+    doc.setFontSize(8)
+    doc.setTextColor(150, 150, 150)
+    doc.setFont('helvetica', 'normal')
+    
+    const footerText = options.brandName 
+      ? `${options.brandName} PRD • Page ${i} of ${totalPages}`
+      : `PRD • Page ${i} of ${totalPages}`
+    
+    doc.text(footerText, pageWidth / 2, pageHeight - 10, { align: 'center' })
+    
+    if (options.personality) {
+      const personalityFooter = `${options.personality.archetype} Brand`
+      doc.setFontSize(7)
+      doc.text(personalityFooter, pageWidth - margin, pageHeight - 10, { align: 'right' })
+    }
+  }
+
+  const fileName = options.brandName 
+    ? `${options.brandName.replace(/\s+/g, '-')}-PRD.pdf`
+    : 'PRD.pdf'
+  
+  doc.save(fileName)
+}

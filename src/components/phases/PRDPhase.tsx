@@ -8,9 +8,10 @@ import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Sparkle, CheckCircle, Circle, ArrowRight, FileText } from '@phosphor-icons/react'
+import { Sparkle, CheckCircle, Circle, ArrowRight, FileText, FilePdf } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { completePhase } from '@/lib/game'
+import { exportPRDToPDF } from '@/lib/prdExport'
 
 interface PRDPhaseProps {
   journey: Journey
@@ -405,6 +406,27 @@ Return only the section content, no JSON.`
     }))
   }
 
+  const handleExportPDF = () => {
+    const prd: PRD = {
+      sections,
+      completeness,
+      timestamp: Date.now()
+    }
+
+    try {
+      exportPRDToPDF(prd, {
+        brandName: journey.brand?.name,
+        tagline: journey.brand?.tagline,
+        personality: journey.brand?.personality,
+        colors: journey.brand?.colors
+      })
+      toast.success('PDF exported successfully!')
+    } catch (error) {
+      toast.error('Failed to export PDF. Please try again.')
+      console.error(error)
+    }
+  }
+
   const handleComplete = () => {
     const prd: PRD = {
       sections,
@@ -480,7 +502,7 @@ Return only the section content, no JSON.`
       <Card className="bg-gradient-to-r from-primary/5 to-accent/5">
         <CardContent className="pt-6">
           <div className="flex items-center justify-between mb-4">
-            <div>
+            <div className="flex-1">
               <p className="text-sm font-medium text-muted-foreground mb-1">Document Completeness</p>
               <div className="flex items-center gap-3">
                 <span className={`text-3xl font-bold ${getCompletenessColor()}`}>
@@ -491,7 +513,19 @@ Return only the section content, no JSON.`
                 </Badge>
               </div>
             </div>
-            <FileText className="w-12 h-12 text-primary/30" weight="duotone" />
+            <div className="flex flex-col items-end gap-3">
+              <FileText className="w-12 h-12 text-primary/30" weight="duotone" />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportPDF}
+                disabled={completeness < 20}
+                className="gap-2"
+              >
+                <FilePdf weight="fill" className="w-4 h-4" />
+                Export PDF
+              </Button>
+            </div>
           </div>
           <Progress value={completeness} className="h-3" />
           <p className="text-xs text-muted-foreground mt-2">
