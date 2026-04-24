@@ -2216,7 +2216,7 @@ Make sure the enhancement is production-ready and well-integrated.`
 }
 
 export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
-  const [step, setStep] = useState<'summary' | 'choose-deployment' | 'configure' | 'brainsait-configure' | 'creating' | 'success'>('summary')
+  const [step, setStep] = useState<'summary' | 'choose-deployment' | 'configure' | 'deployment-options' | 'brainsait-configure' | 'creating' | 'success'>('summary')
   const [deploymentChoice, setDeploymentChoice] = useState<'personal' | 'brainsait' | null>(null)
   const [repoName, setRepoName] = useState('')
   const [isPrivate, setIsPrivate] = useState(false)
@@ -2224,6 +2224,9 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
   const [error, setError] = useState<string | null>(null)
   const [founderEmail, setFounderEmail] = useState('')
   const [companyName, setCompanyName] = useState(journey.brand?.name || '')
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
+  const [includeDocker, setIncludeDocker] = useState(true)
+  const [includeCICD, setIncludeCICD] = useState(true)
   const { t } = useLanguage()
 
   useEffect(() => {
@@ -2251,17 +2254,39 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
 
     try {
       const { createGitHubRepository, generateRepoDescription, generateReadmeContent } = await import('@/lib/github')
+      const { getAllCICDFiles } = await import('@/lib/cicd')
       
       const description = generateRepoDescription(journey)
-      const readmeContent = generateReadmeContent(journey)
       
-      const filesToCommit = [
-        ...journey.code.files,
-        {
-          path: 'README.md',
-          content: readmeContent
+      const updatedJourneyForReadme = {
+        ...journey,
+        githubRepo: {
+          name: repoName,
+          url: '',
+          createdAt: Date.now(),
+          deploymentPlatforms: selectedPlatforms,
+          includeDocker,
+          includeCICD
         }
-      ]
+      }
+      const readmeContent = generateReadmeContent(updatedJourneyForReadme)
+      
+      const filesToCommit = [...journey.code.files]
+      
+      filesToCommit.push({
+        path: 'README.md',
+        content: readmeContent
+      })
+      
+      if (includeDocker || includeCICD) {
+        const deploymentFiles = getAllCICDFiles(
+          'html',
+          journey.code.template,
+          journey.brand?.name || 'project',
+          selectedPlatforms as any[]
+        )
+        filesToCommit.push(...deploymentFiles)
+      }
 
       const repo = await createGitHubRepository({
         name: repoName,
@@ -2270,7 +2295,14 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
         files: filesToCommit
       })
 
-      const updatedJourney = { ...journey, githubRepo: repo }
+      const repoWithConfig = {
+        ...repo,
+        deploymentPlatforms: selectedPlatforms,
+        includeDocker,
+        includeCICD
+      }
+
+      const updatedJourney = { ...journey, githubRepo: repoWithConfig }
       const completedJourney = completePhase(updatedJourney, 'github')
       
       if (onComplete) {
@@ -2282,7 +2314,7 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
     } catch (err: any) {
       setError(err.message || 'Failed to create repository')
       toast.error(err.message || 'Failed to create repository')
-      setStep('configure')
+      setStep('deployment-options')
     } finally {
       setIsCreating(false)
     }
@@ -2296,6 +2328,7 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
           {step === 'summary' ? t.github.subtitle : 
            step === 'choose-deployment' ? t.github.subtitleChoose :
            step === 'configure' ? t.github.subtitleConfigure :
+           step === 'deployment-options' ? 'Select deployment platforms and configurations' :
            step === 'brainsait-configure' ? t.github.subtitleJoin :
            step === 'creating' ? t.github.subtitleCreating :
            t.github.subtitleSuccess}

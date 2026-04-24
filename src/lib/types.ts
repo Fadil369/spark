@@ -84,6 +84,9 @@ export interface GitHubRepo {
   url: string
   createdAt: number
   commitSha?: string
+  deploymentPlatforms?: string[]
+  includeDocker?: boolean
+  includeCICD?: boolean
 }
 
 export interface Badge {
