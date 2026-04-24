@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Journey, Story, Brand, BrandPersonality, GeneratedCode } from '@/lib/types'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, Sparkle, Brain, Heart, Rocket, Shield, Target, Users, Check, Code, ListChecks } from '@phosphor-icons/react'
+import { ArrowRight, Sparkle, Brain, Heart, Rocket, Shield, Target, Users, Check, Code, ListChecks, GitBranch, Package, CheckCircle } from '@phosphor-icons/react'
 import { Textarea } from '@/components/ui/textarea'
 import { Slider } from '@/components/ui/slider'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -2648,6 +2648,238 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
               {t.back}
             </Button>
             <Button 
+              onClick={() => setStep('deployment-options')} 
+              disabled={!repoName.trim()}
+              className="flex-1"
+              size="lg"
+            >
+              <ArrowRight className="mr-2" weight="bold" />
+              {t.github.continueToDeployment || 'Continue to Deployment'}
+            </Button>
+          </CardFooter>
+        </Card>
+      )}
+
+      {step === 'deployment-options' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Rocket weight="fill" className="text-primary" />
+              {t.github.deploymentConfiguration || 'Deployment Configuration'}
+            </CardTitle>
+            <CardDescription>
+              {t.github.deploymentConfigurationDesc || 'Choose deployment platforms and configure CI/CD pipeline for your application'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-8">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-base">{t.github.selectPlatforms || 'Select Deployment Platforms'}</h3>
+                <Badge variant="secondary" className="text-xs">
+                  {selectedPlatforms.length} selected
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {t.github.selectPlatformsDesc || 'Choose one or more platforms where you want to deploy your application. CI/CD workflows and config files will be automatically generated.'}
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <label className="flex items-start gap-3 p-4 rounded-lg border-2 border-border hover:border-primary/50 cursor-pointer transition-all">
+                  <input
+                    type="checkbox"
+                    checked={selectedPlatforms.includes('vercel')}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedPlatforms([...selectedPlatforms, 'vercel'])
+                      } else {
+                        setSelectedPlatforms(selectedPlatforms.filter(p => p !== 'vercel'))
+                      }
+                    }}
+                    className="mt-1 w-5 h-5"
+                  />
+                  <div className="flex-1">
+                    <div className="font-semibold mb-1 flex items-center gap-2">
+                      Vercel
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">Recommended for React/Vue</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Zero-config deployments with automatic HTTPS and global CDN
+                    </p>
+                  </div>
+                </label>
+
+                <label className="flex items-start gap-3 p-4 rounded-lg border-2 border-border hover:border-primary/50 cursor-pointer transition-all">
+                  <input
+                    type="checkbox"
+                    checked={selectedPlatforms.includes('netlify')}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedPlatforms([...selectedPlatforms, 'netlify'])
+                      } else {
+                        setSelectedPlatforms(selectedPlatforms.filter(p => p !== 'netlify'))
+                      }
+                    }}
+                    className="mt-1 w-5 h-5"
+                  />
+                  <div className="flex-1">
+                    <div className="font-semibold mb-1 flex items-center gap-2">
+                      Netlify
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">Great for static sites</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      All-in-one platform with form handling and serverless functions
+                    </p>
+                  </div>
+                </label>
+
+                <label className="flex items-start gap-3 p-4 rounded-lg border-2 border-border hover:border-primary/50 cursor-pointer transition-all">
+                  <input
+                    type="checkbox"
+                    checked={selectedPlatforms.includes('github-pages')}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedPlatforms([...selectedPlatforms, 'github-pages'])
+                      } else {
+                        setSelectedPlatforms(selectedPlatforms.filter(p => p !== 'github-pages'))
+                      }
+                    }}
+                    className="mt-1 w-5 h-5"
+                  />
+                  <div className="flex-1">
+                    <div className="font-semibold mb-1 flex items-center gap-2">
+                      GitHub Pages
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-green-100 dark:bg-green-900">Free</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Free static site hosting directly from your repository
+                    </p>
+                  </div>
+                </label>
+
+                <label className="flex items-start gap-3 p-4 rounded-lg border-2 border-border hover:border-primary/50 cursor-pointer transition-all">
+                  <input
+                    type="checkbox"
+                    checked={selectedPlatforms.includes('railway')}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedPlatforms([...selectedPlatforms, 'railway'])
+                      } else {
+                        setSelectedPlatforms(selectedPlatforms.filter(p => p !== 'railway'))
+                      }
+                    }}
+                    className="mt-1 w-5 h-5"
+                  />
+                  <div className="flex-1">
+                    <div className="font-semibold mb-1">Railway</div>
+                    <p className="text-xs text-muted-foreground">
+                      Modern platform with database support and easy scaling
+                    </p>
+                  </div>
+                </label>
+
+                <label className="flex items-start gap-3 p-4 rounded-lg border-2 border-border hover:border-primary/50 cursor-pointer transition-all">
+                  <input
+                    type="checkbox"
+                    checked={selectedPlatforms.includes('render')}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedPlatforms([...selectedPlatforms, 'render'])
+                      } else {
+                        setSelectedPlatforms(selectedPlatforms.filter(p => p !== 'render'))
+                      }
+                    }}
+                    className="mt-1 w-5 h-5"
+                  />
+                  <div className="flex-1">
+                    <div className="font-semibold mb-1">Render</div>
+                    <p className="text-xs text-muted-foreground">
+                      Unified cloud for static sites, web services, and databases
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div className="border-t pt-6 space-y-4">
+              <h3 className="font-semibold text-base">{t.github.additionalOptions || 'Additional Configuration'}</h3>
+              
+              <label className="flex items-start gap-3 p-4 rounded-lg border-2 border-primary/20 bg-primary/5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={includeCICD}
+                  onChange={(e) => setIncludeCICD(e.target.checked)}
+                  className="mt-1 w-5 h-5"
+                />
+                <div className="flex-1">
+                  <div className="font-semibold mb-1 flex items-center gap-2">
+                    <GitBranch weight="bold" className="w-4 h-4 text-primary" />
+                    {t.github.includeCI || 'Include CI/CD Pipeline'}
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Recommended</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    {t.github.includeCIDesc || 'Automatically generate GitHub Actions workflows for continuous deployment to selected platforms'}
+                  </p>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p>✓ Automatic deployments on push to main branch</p>
+                    <p>✓ Preview deployments for pull requests</p>
+                    <p>✓ Build and test automation</p>
+                  </div>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3 p-4 rounded-lg border-2 border-border hover:border-primary/50 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={includeDocker}
+                  onChange={(e) => setIncludeDocker(e.target.checked)}
+                  className="mt-1 w-5 h-5"
+                />
+                <div className="flex-1">
+                  <div className="font-semibold mb-1 flex items-center gap-2">
+                    <Package weight="bold" className="w-4 h-4" />
+                    {t.github.includeDocker || 'Include Docker Configuration'}
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    {t.github.includeDockerDesc || 'Generate Dockerfile and docker-compose.yml for containerized deployments'}
+                  </p>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p>✓ Dockerfile with multi-stage builds</p>
+                    <p>✓ Docker Compose for local development</p>
+                    <p>✓ Production-ready container configuration</p>
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            {selectedPlatforms.length > 0 && (includeCICD || includeDocker) && (
+              <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" weight="fill" />
+                  <div className="flex-1 text-sm">
+                    <p className="font-semibold mb-2 text-blue-900 dark:text-blue-100">
+                      {t.github.filesWillBeGenerated || 'Files that will be generated:'}
+                    </p>
+                    <ul className="text-blue-700 dark:text-blue-300 text-xs space-y-1 ml-4 list-disc">
+                      <li>README.md with deployment instructions</li>
+                      <li>DEPLOYMENT.md with detailed platform guides</li>
+                      {includeCICD && selectedPlatforms.map(platform => (
+                        <li key={platform}>.github/workflows/deploy-{platform}.yml</li>
+                      ))}
+                      {includeCICD && selectedPlatforms.includes('vercel') && <li>vercel.json configuration</li>}
+                      {includeCICD && selectedPlatforms.includes('netlify') && <li>netlify.toml configuration</li>}
+                      {includeDocker && <li>Dockerfile for production builds</li>}
+                      {includeDocker && <li>docker-compose.yml for local development</li>}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+          <CardFooter className="flex gap-3">
+            <Button variant="outline" onClick={() => setStep('configure')}>
+              {t.back}
+            </Button>
+            <Button 
               onClick={handleCreateRepo} 
               disabled={!repoName.trim() || isCreating}
               className="flex-1"
@@ -2734,8 +2966,9 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
 
               <DeploymentInstructions 
                 repoUrl={journey.githubRepo.url}
-                repoName={journey.githubRepo.name}
+                projectName={journey.githubRepo.name}
                 framework="html"
+                template={journey.code?.template || 'landing'}
               />
 
               <div className="space-y-3">
