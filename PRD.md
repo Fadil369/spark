@@ -48,18 +48,18 @@ This is a multi-phase application with persistent state, AI integration via Spar
 - Success criteria: All PRD sections filled with content matching brand personality, completeness meter shows "Investor Ready", document is structured and coherent, PDF export applies personality-specific styling and formatting
 
 **Phase 5: Code Generator**
-- Functionality: Architecture template selection based on PRD, customization with brand/content, live preview of generated site
-- Purpose: Turn PRD into tangible code artifact
+- Functionality: AI-powered code generation with architecture template selection (landing page, web app, or admin dashboard), PRD-based customization, brand personality integration, feature prioritization, technical recommendations, security considerations, code preview with file browser, enhancement options
+- Purpose: Transform PRD into production-ready, downloadable code that reflects brand personality and includes intelligent architectural decisions
 - Trigger: Complete PRD phase
-- Progression: Review PRD summary → Select template type → AI customizes code → View preview → Adjust settings → Generate final code → Unlock GitHub
-- Success criteria: User can see generated HTML/React preview with their brand and content
+- Progression: Review brand personality → Select template type (landing/webapp/dashboard) → AI analyzes requirements and provides recommendations → Customize features (auth, forms, charts, accessibility, animations) → Select priority features from PRD → Generate AI-powered code → Preview code structure and files → Optional AI enhancements (error handling, mobile optimization, SEO, performance) → Complete and unlock GitHub phase
+- Success criteria: User receives production-ready code files with brand colors, personality-matched design, intelligent architecture, comprehensive comments, and ability to copy/download all files
 
 **Phase 6: GitHub Integration**
-- Functionality: Display generated code structure, show commit message, celebration animation
-- Purpose: Validate journey completion and provide sense of launch
+- Functionality: Direct GitHub repository creation with generated code files, automatic README generation, repository configuration (public/private), real-time creation status, success confirmation with repository link
+- Purpose: Enable users to push their generated code directly to GitHub, creating a real repository they can access, share, and deploy
 - Trigger: Complete Code phase
-- Progression: View code summary → See mock GitHub push details → Trigger celebration → View journey timeline → Start new journey
-- Success criteria: User sees celebration, unlocks "Repo Rocketeer" badge, can review entire journey
+- Progression: View journey summary → Configure repository name and visibility → Create repository → Upload code files and README → Show success with GitHub link → Provide next steps (clone, view on GitHub, settings) → Complete journey
+- Success criteria: User creates a real GitHub repository with all generated files, receives a working repository URL, unlocks "Repo Rocketeer" badge, can access and manage their code on GitHub
 
 **Gamification Engine**
 - Functionality: XP tracking, badge awards, level progression (1-10), milestone celebrations, streak tracking

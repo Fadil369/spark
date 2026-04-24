@@ -79,6 +79,13 @@ export interface GeneratedCode {
   timestamp: number
 }
 
+export interface GitHubRepo {
+  name: string
+  url: string
+  createdAt: number
+  commitSha?: string
+}
+
 export interface Badge {
   id: string
   name: string
@@ -107,6 +114,7 @@ export interface Journey {
   brand?: Brand
   prd?: PRD
   code?: GeneratedCode
+  githubRepo?: GitHubRepo
   gameState: GameState
 }
 

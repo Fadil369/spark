@@ -1718,39 +1718,410 @@ Make sure the enhancement is production-ready and well-integrated.`
   )
 }
 
-export function GitHubPhase({ journey }: CompletionPhaseProps) {
+export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
+  const [step, setStep] = useState<'summary' | 'configure' | 'creating' | 'success'>('summary')
+  const [repoName, setRepoName] = useState('')
+  const [isPrivate, setIsPrivate] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (journey.githubRepo) {
+      setStep('success')
+    } else if (journey.brand?.name) {
+      const generatedName = journey.brand.name
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '')
+      setRepoName(generatedName)
+    }
+  }, [])
+
+  const handleCreateRepo = async () => {
+    if (!journey.code || !repoName.trim()) {
+      toast.error('Repository name is required')
+      return
+    }
+
+    setIsCreating(true)
+    setError(null)
+    setStep('creating')
+
+    try {
+      const { createGitHubRepository, generateRepoDescription, generateReadmeContent } = await import('@/lib/github')
+      
+      const description = generateRepoDescription(journey)
+      const readmeContent = generateReadmeContent(journey)
+      
+      const filesToCommit = [
+        ...journey.code.files,
+        {
+          path: 'README.md',
+          content: readmeContent
+        }
+      ]
+
+      const repo = await createGitHubRepository({
+        name: repoName,
+        description,
+        isPrivate,
+        files: filesToCommit
+      })
+
+      const updatedJourney = { ...journey, githubRepo: repo }
+      const completedJourney = completePhase(updatedJourney, 'github')
+      
+      if (onComplete) {
+        onComplete(completedJourney)
+      }
+
+      setStep('success')
+      toast.success('🎉 Repository created successfully!')
+    } catch (err: any) {
+      setError(err.message || 'Failed to create repository')
+      toast.error(err.message || 'Failed to create repository')
+      setStep('configure')
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="text-center space-y-4">
-        <div className="text-6xl">🎉</div>
-        <h1 className="text-4xl font-bold font-heading">Congratulations!</h1>
+      <div className="text-center space-y-2">
+        <h1 className="text-4xl font-bold font-heading">GitHub Repository</h1>
         <p className="text-lg text-muted-foreground">
-          You've completed your healthcare startup journey
+          {step === 'summary' ? 'Review your journey and push to GitHub' : 
+           step === 'configure' ? 'Configure your repository settings' :
+           step === 'creating' ? 'Creating your repository...' :
+           'Your code is live on GitHub!'}
         </p>
       </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Journey Summary</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {journey.concept && (
-            <div>
-              <h3 className="font-semibold mb-2">Concept</h3>
-              <p className="text-sm text-muted-foreground">{journey.concept.problem}</p>
+
+      {step === 'summary' && (
+        <div className="space-y-6">
+          <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-primary/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Rocket weight="fill" className="text-primary" />
+                Your Journey Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {journey.concept && (
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm text-muted-foreground">Concept</h3>
+                  <p className="text-sm">{journey.concept.problem}</p>
+                </div>
+              )}
+              
+              {journey.brand && (
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm text-muted-foreground">Brand</h3>
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">{journey.brand.logo}</div>
+                    <div>
+                      <div className="font-semibold">{journey.brand.name}</div>
+                      <div className="text-sm text-muted-foreground">{journey.brand.tagline}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {journey.code && (
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm text-muted-foreground">Generated Code</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {journey.code.files.map((file, idx) => (
+                      <Badge key={idx} variant="secondary">
+                        {file.path}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 p-4 bg-primary/10 rounded-lg border border-primary/20">
+                <Sparkle weight="fill" className="text-primary" />
+                <div>
+                  <div className="font-semibold">Level {journey.gameState.level} Founder</div>
+                  <div className="text-sm text-muted-foreground">
+                    {journey.gameState.xp} XP earned • {journey.gameState.badges.filter(b => b.earned).length} badges unlocked
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Ready to Push to GitHub?</CardTitle>
+              <CardDescription>
+                Create a GitHub repository with your generated code and README
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <p className="text-sm">
+                  Clicking "Create Repository" will:
+                </p>
+                <ul className="text-sm space-y-1 ml-6 list-disc text-muted-foreground">
+                  <li>Create a new GitHub repository under your account</li>
+                  <li>Push all generated code files to the repository</li>
+                  <li>Generate and include a comprehensive README.md</li>
+                  <li>Make your project immediately accessible</li>
+                </ul>
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button onClick={() => setStep('configure')} className="w-full" size="lg">
+                <Rocket className="mr-2" weight="fill" />
+                Create GitHub Repository
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      )}
+
+      {step === 'configure' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Configure Repository</CardTitle>
+            <CardDescription>Set up your GitHub repository details</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {error && (
+              <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-sm">
+                <p className="font-semibold text-destructive mb-1">Error</p>
+                <p className="text-muted-foreground">{error}</p>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label htmlFor="repo-name" className="text-sm font-semibold">
+                Repository Name
+              </label>
+              <input
+                id="repo-name"
+                type="text"
+                value={repoName}
+                onChange={(e) => setRepoName(e.target.value)}
+                placeholder="my-healthcare-startup"
+                className="w-full px-4 py-2 rounded-lg border border-input bg-background"
+              />
+              <p className="text-xs text-muted-foreground">
+                Only lowercase letters, numbers, and hyphens allowed
+              </p>
             </div>
-          )}
-          <div className="flex items-center gap-2 p-4 bg-primary/10 rounded-lg">
-            <Sparkle weight="fill" className="text-primary" />
-            <div>
-              <div className="font-semibold">Level {journey.gameState.level} Founder</div>
-              <div className="text-sm text-muted-foreground">
-                {journey.gameState.xp} XP earned
+
+            <div className="space-y-4">
+              <h3 className="font-semibold text-sm">Repository Visibility</h3>
+              <div className="space-y-3">
+                <label className="flex items-start gap-3 p-4 rounded-lg border-2 border-border hover:border-primary/50 cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={!isPrivate}
+                    onChange={() => setIsPrivate(false)}
+                    className="mt-0.5"
+                  />
+                  <div>
+                    <div className="font-medium">Public</div>
+                    <div className="text-xs text-muted-foreground">
+                      Anyone can see this repository. Great for open source projects.
+                    </div>
+                  </div>
+                </label>
+
+                <label className="flex items-start gap-3 p-4 rounded-lg border-2 border-border hover:border-primary/50 cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={isPrivate}
+                    onChange={() => setIsPrivate(true)}
+                    className="mt-0.5"
+                  />
+                  <div>
+                    <div className="font-medium">Private</div>
+                    <div className="text-xs text-muted-foreground">
+                      Only you can see this repository. Keep your code confidential.
+                    </div>
+                  </div>
+                </label>
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+
+            <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">ℹ️</div>
+                <div className="flex-1 text-sm">
+                  <p className="font-semibold mb-1 text-blue-900 dark:text-blue-100">Authentication Required</p>
+                  <p className="text-blue-700 dark:text-blue-300 text-xs">
+                    You must be signed in with GitHub and have the necessary permissions to create repositories.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="flex gap-3">
+            <Button variant="outline" onClick={() => setStep('summary')}>
+              Back
+            </Button>
+            <Button 
+              onClick={handleCreateRepo} 
+              disabled={!repoName.trim() || isCreating}
+              className="flex-1"
+              size="lg"
+            >
+              {isCreating ? (
+                <>Creating Repository...</>
+              ) : (
+                <>
+                  <Rocket className="mr-2" weight="fill" />
+                  Create Repository
+                </>
+              )}
+            </Button>
+          </CardFooter>
+        </Card>
+      )}
+
+      {step === 'creating' && (
+        <Card>
+          <CardContent className="py-16 text-center space-y-6">
+            <div className="relative w-24 h-24 mx-auto">
+              <div className="absolute inset-0 border-4 border-primary/30 rounded-full" />
+              <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+              <Rocket className="w-12 h-12 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary" weight="fill" />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold mb-2">Creating Your GitHub Repository...</h3>
+              <p className="text-muted-foreground">This may take a moment</p>
+            </div>
+            <div className="max-w-md mx-auto space-y-2 text-sm text-muted-foreground">
+              <p>✓ Creating repository on GitHub</p>
+              <p>✓ Uploading code files</p>
+              <p>✓ Generating README documentation</p>
+              <p className="animate-pulse">⏳ Finalizing commit...</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {step === 'success' && journey.githubRepo && (
+        <div className="space-y-6">
+          <Card className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 dark:border-green-800">
+            <CardContent className="pt-6 pb-6">
+              <div className="text-center space-y-4">
+                <div className="text-6xl">🎉</div>
+                <div>
+                  <h3 className="text-2xl font-bold mb-2">Repository Created Successfully!</h3>
+                  <p className="text-muted-foreground">Your healthcare startup is now live on GitHub</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Your GitHub Repository</CardTitle>
+              <CardDescription>Access your code anytime on GitHub</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="p-6 rounded-lg border-2 border-primary/20 bg-primary/5">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0">
+                    <Rocket className="w-6 h-6 text-primary" weight="fill" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-lg mb-1">{journey.githubRepo.name}</div>
+                    <a 
+                      href={journey.githubRepo.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-sm text-primary hover:underline break-all"
+                    >
+                      {journey.githubRepo.url}
+                    </a>
+                    {journey.githubRepo.commitSha && (
+                      <div className="text-xs text-muted-foreground mt-2">
+                        Initial commit: {journey.githubRepo.commitSha.slice(0, 7)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="font-semibold text-sm">Next Steps</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <a
+                    href={journey.githubRepo.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-4 rounded-lg border-2 border-border hover:border-primary/50 transition-all"
+                  >
+                    <div className="font-medium mb-1">View on GitHub</div>
+                    <div className="text-xs text-muted-foreground">
+                      See your repository and all files
+                    </div>
+                  </a>
+
+                  <a
+                    href={`${journey.githubRepo.url}/archive/refs/heads/main.zip`}
+                    className="p-4 rounded-lg border-2 border-border hover:border-primary/50 transition-all"
+                  >
+                    <div className="font-medium mb-1">Download Code</div>
+                    <div className="text-xs text-muted-foreground">
+                      Get a local copy as ZIP file
+                    </div>
+                  </a>
+
+                  <a
+                    href={`${journey.githubRepo.url}/settings`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-4 rounded-lg border-2 border-border hover:border-primary/50 transition-all"
+                  >
+                    <div className="font-medium mb-1">Repository Settings</div>
+                    <div className="text-xs text-muted-foreground">
+                      Configure GitHub Pages, collaborators
+                    </div>
+                  </a>
+
+                  <div className="p-4 rounded-lg border-2 border-border hover:border-primary/50 transition-all cursor-pointer">
+                    <div className="font-medium mb-1">Clone Locally</div>
+                    <div className="text-xs text-muted-foreground">
+                      git clone {journey.githubRepo.url}.git
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-lg bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800">
+                <div className="flex items-start gap-3">
+                  <div className="text-2xl">💡</div>
+                  <div className="flex-1 text-sm">
+                    <p className="font-semibold mb-1 text-orange-900 dark:text-orange-100">Remember</p>
+                    <p className="text-orange-700 dark:text-orange-300 text-xs">
+                      This is an MVP scaffold. Before going to production, add proper authentication, implement HIPAA compliance if needed, conduct security audits, and consult with legal/regulatory experts.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 p-4 bg-primary/10 rounded-lg">
+                <Sparkle weight="fill" className="text-primary" />
+                <div>
+                  <div className="font-semibold">🏆 Journey Complete!</div>
+                  <div className="text-sm text-muted-foreground">
+                    Level {journey.gameState.level} Founder • {journey.gameState.xp} XP • {journey.gameState.badges.filter(b => b.earned).length} badges earned
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }
