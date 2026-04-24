@@ -1,4 +1,7 @@
 import { Journey, GameState, PhaseKey, PHASE_CONFIG, BADGES } from './types'
+import { subDays, format } from 'date-fns'
+
+export const XP_PER_LEVEL = 200
 
 export function createNewJourney(): Journey {
   return {
@@ -25,22 +28,22 @@ export function createNewJourney(): Journey {
 }
 
 export function calculateLevel(xp: number): number {
-  return Math.min(Math.floor(xp / 200) + 1, 10)
+  return Math.min(Math.floor(xp / XP_PER_LEVEL) + 1, 10)
 }
 
 export function getXPForNextLevel(level: number): number {
-  return level * 200
+  return level * XP_PER_LEVEL
 }
 
 export function updateStreak(gameState: GameState): GameState {
-  const today = new Date().toISOString().split('T')[0]
+  const today = format(new Date(), 'yyyy-MM-dd')
   const lastActive = gameState.lastActiveDate
 
   if (lastActive === today) {
     return gameState
   }
 
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+  const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd')
   const isConsecutive = lastActive === yesterday
 
   return {

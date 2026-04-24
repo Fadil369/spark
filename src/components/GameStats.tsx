@@ -1,5 +1,5 @@
 import { Journey } from '@/lib/types'
-import { formatXP } from '@/lib/game'
+import { formatXP, XP_PER_LEVEL } from '@/lib/game'
 import { Card } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Trophy, Star, Flame } from '@phosphor-icons/react'
@@ -12,8 +12,8 @@ interface GameStatsProps {
 export function GameStats({ journey }: GameStatsProps) {
   const { t } = useLanguage()
   const { xp, level, badges, streakDays } = journey.gameState
-  const xpInCurrentLevel = xp - (level - 1) * 200
-  const xpProgress = Math.min((xpInCurrentLevel / 200) * 100, 100)
+  const xpInCurrentLevel = xp - (level - 1) * XP_PER_LEVEL
+  const xpProgress = Math.min((xpInCurrentLevel / XP_PER_LEVEL) * 100, 100)
   const earnedBadges = badges.filter(b => b.earned)
 
   return (
@@ -34,11 +34,11 @@ export function GameStats({ journey }: GameStatsProps) {
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium">{t.xpProgress}</span>
-            <span className="text-sm text-muted-foreground">{formatXP(xpInCurrentLevel)} / 200</span>
+            <span className="text-sm text-muted-foreground">{formatXP(xpInCurrentLevel)} / {XP_PER_LEVEL}</span>
           </div>
           <Progress value={xpProgress} className="h-2" />
           <div className="text-xs text-muted-foreground">
-            {formatXP(200 - xpInCurrentLevel)} {t.xpToNextLevel}
+            {formatXP(XP_PER_LEVEL - xpInCurrentLevel)} {t.xpToNextLevel}
           </div>
         </div>
       </Card>
