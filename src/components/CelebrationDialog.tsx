@@ -3,6 +3,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Trophy, Star, ArrowRight } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
+import { SparkLogo } from '@/components/SparkLogo'
 
 interface CelebrationDialogProps {
   open: boolean
@@ -99,13 +100,13 @@ export function CelebrationDialog({
             showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
           )}
         >
-          {/* Trophy icon */}
+          {/* Animated Spark Logo */}
           <div className="flex justify-center">
             <div className="relative">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center shadow-lg">
-                <Trophy weight="fill" className="w-12 h-12 text-white" />
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary via-accent to-primary-foreground/20 flex items-center justify-center shadow-lg shadow-primary/20">
+                <SparkLogo className="w-16 h-16 text-primary-foreground" animated />
               </div>
-              <div className="absolute -top-1 -right-1 w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+              <div className="absolute -top-1 -right-1 w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center animate-pulse">
                 <Star weight="fill" className="w-4 h-4 text-white" />
               </div>
             </div>

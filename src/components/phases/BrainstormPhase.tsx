@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Sparkle, ArrowRight } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import { successToast } from '@/lib/toastWithLogo'
 import { AILoadingScreen } from '@/components/AILoadingScreen'
 import { useLanguage } from '@/contexts/LanguageContext'
 
@@ -65,7 +66,7 @@ export function BrainstormPhase({ journey, onComplete }: BrainstormPhaseProps) {
       const data = JSON.parse(response)
       setKeywords(data.keywords || [])
       setStep('refine')
-      toast.success(language === 'ar' ? 'تم توليد المفاهيم الصحية بنجاح!' : 'AI generated related healthcare concepts!')
+      successToast(language === 'ar' ? 'تم توليد المفاهيم الصحية بنجاح!' : 'AI generated related healthcare concepts!')
     } catch (error) {
       toast.error(language === 'ar' ? 'فشل توليد الأفكار. يرجى المحاولة مجدداً.' : 'Failed to generate ideas. Please try again.')
       console.error(error)
@@ -93,7 +94,7 @@ export function BrainstormPhase({ journey, onComplete }: BrainstormPhaseProps) {
         keywords: [...keywords, input]
       })
       setStep('finalize')
-      toast.success(language === 'ar' ? 'تم تحسين المفهوم بنجاح!' : 'Concept refined successfully!')
+      successToast(language === 'ar' ? 'تم تحسين المفهوم بنجاح!' : 'Concept refined successfully!')
     } catch (error) {
       toast.error(language === 'ar' ? 'فشل تحسين المفهوم. يرجى المحاولة مجدداً.' : 'Failed to refine concept. Please try again.')
       console.error(error)
