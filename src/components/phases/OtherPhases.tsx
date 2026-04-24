@@ -16,7 +16,7 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import { LiveCodePreview } from '@/components/LiveCodePreview'
 import { BrainsaitEnterpriseOffer } from '@/components/BrainsaitEnterpriseOffer'
 import { DeploymentInstructions } from '@/components/DeploymentInstructions'
-import { getFrameworkBestPractices, getTemplateArchitecture, generateFrameworkSpecificPrompt, type FrameworkType, type TemplateType } from '@/lib/frameworkBestPractices'
+import { getFrameworkBestPractices, getTemplateArchitecture, type FrameworkType, type TemplateType } from '@/lib/frameworkBestPractices'
 
 interface CompletionPhaseProps {
   journey: Journey
@@ -1032,6 +1032,41 @@ Return a JSON object with a single property "taglines" containing an array of ex
 
 
 
+interface GeneratedFileEntry {
+  path: string
+  content: string
+}
+
+interface GeneratedFilesResponse {
+  files: GeneratedFileEntry[]
+}
+
+const MAX_GENERATED_FILES = 3
+
+function safeJsonParse(response: string): GeneratedFilesResponse {
+  let text = response.trim()
+  // Strip markdown code fences (```json ... ``` or ``` ... ```)
+  const fenceMatch = text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/)
+  if (fenceMatch) {
+    text = fenceMatch[1].trim()
+  } else {
+    const innerFence = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
+    if (innerFence) {
+      text = innerFence[1].trim()
+    }
+  }
+  try {
+    return JSON.parse(text) as GeneratedFilesResponse
+  } catch (err) {
+    const msg = (err as Error).message
+    // Provide a specific hint when the JSON string was cut off mid-content
+    const hint = /unterminated string|unexpected end|unexpected token/i.test(msg)
+      ? 'The AI response was likely truncated (hit output token limit).'
+      : 'The AI response was not valid JSON.'
+    throw new SyntaxError(`JSON parse failed – ${hint} Raw error: ${msg}`)
+  }
+}
+
 export function CodePhase({ journey, onComplete }: CompletionPhaseProps) {
   const [step, setStep] = useState<'template' | 'customize' | 'generating' | 'preview' | 'enhance' | 'analyze'>('template')
   const [selectedTemplate, setSelectedTemplate] = useState<'landing' | 'webapp' | 'dashboard'>('landing')
@@ -1266,112 +1301,59 @@ Be specific and actionable in your analysis.`
       try {
         setRetryAttempt(attemptNumber)
         
-        const templateInfo = templates.find(t => t.type === selectedTemplate)
         const personalityContext = journey.brand.personality ? `
-Brand Personality:
-- Archetype: ${journey.brand.personality.archetype}
-- Tone: ${journey.brand.personality.tone.join(', ')}
-- Values: ${journey.brand.personality.values.join(', ')}
-- Target Feeling: ${journey.brand.personality.targetFeeling}
-- Visual Style: ${journey.brand.personality.styleDirection}
-
-Design the UI to reflect this personality. Use ${journey.brand.personality.styleDirection} styling. The interface should make users feel ${journey.brand.personality.targetFeeling}.` : ''
+Brand Personality: ${journey.brand.personality.archetype}, tone=${journey.brand.personality.tone.join('/')}, feel=${journey.brand.personality.targetFeeling}, style=${journey.brand.personality.styleDirection}` : ''
 
         const featuresContext = selectedFeatures.length > 0 ? `
-Priority Features to Implement:
-${selectedFeatures.map(f => `- ${f}`).join('\n')}` : ''
+Priority Features: ${selectedFeatures.join(', ')}` : ''
 
-        const customizationContext = `
-Customization Options:
-- Include authentication UI: ${customizations.includeAuth ? 'Yes' : 'No'}
-- Include form validation: ${customizations.includeForms ? 'Yes' : 'No'}
-- Include data visualizations: ${customizations.includeCharts ? 'Yes' : 'No'}
-- WCAG accessibility features: ${customizations.includeAccessibility ? 'Yes' : 'No'}
-- Micro-interactions and animations: ${customizations.includeAnimations ? 'Yes' : 'No'}`
-
-        const aiInsightsContext = aiInsights ? `
-AI Architecture Recommendations:
-${aiInsights.recommendations.map(r => `- ${r}`).join('\n')}
-
-Security Considerations:
-${aiInsights.securityNotes.map(n => `- ${n}`).join('\n')}` : ''
+        const customizationContext = `Auth=${customizations.includeAuth}, Forms=${customizations.includeForms}, Charts=${customizations.includeCharts}, A11y=${customizations.includeAccessibility}, Animations=${customizations.includeAnimations}, Responsive=${customizations.includeResponsive}, SEO=${customizations.includeSEO}`
 
         const frameworkGuide = getFrameworkBestPractices(selectedFramework as FrameworkType)
         const templateGuide = getTemplateArchitecture(selectedTemplate)
         
-        const frameworkSpecificGuidance = generateFrameworkSpecificPrompt(
-          selectedFramework as FrameworkType,
-          selectedTemplate,
-          journey.brand,
-          journey.prd,
-          customizations
-        )
-        
-        const prompt = window.spark.llmPrompt`You are a world-class ${frameworkGuide.name} engineer specializing in healthcare applications. Generate a stunning, production-ready ${selectedTemplate} that follows ${frameworkGuide.name} best practices and looks like it was crafted by a top-tier design agency.
+        const templateLayout = selectedTemplate === 'landing'
+          ? 'hero section with headline, feature cards, social proof, and CTA'
+          : selectedTemplate === 'webapp'
+          ? 'sidebar navigation, top bar, dashboard metrics, and interactive sections'
+          : 'sidebar menu, KPI cards, data table, chart area, and activity feed'
 
-${frameworkSpecificGuidance}
+        const prompt = window.spark.llmPrompt`You are a ${frameworkGuide.name} engineer building a healthcare ${selectedTemplate}. Generate production-ready code.
 
-BRAND IDENTITY:
+FRAMEWORK: ${frameworkGuide.name}
+FILE STRUCTURE: ${templateGuide.fileStructure[selectedFramework as FrameworkType].join(', ')}
+
+BRAND:
 Name: ${journey.brand.name}
 Tagline: ${journey.brand.tagline}
-Primary Color: ${journey.brand.colors.primary}
-Secondary Color: ${journey.brand.colors.secondary}
-Accent Color: ${journey.brand.colors.accent}
+Colors: primary=${journey.brand.colors.primary}, secondary=${journey.brand.colors.secondary}, accent=${journey.brand.colors.accent}
 ${personalityContext}
 
-PRODUCT CONTEXT:
-Problem: ${journey.prd.sections.problem.content.slice(0, 600)}
-
-Solution: ${journey.prd.sections.solution.content.slice(0, 600)}
-
-Target Users: ${journey.prd.sections.targetUsers.content.slice(0, 400)}
-
-Key Features from PRD: ${journey.prd.sections.features.content.slice(0, 800)}
+PRODUCT:
+Problem: ${journey.prd.sections.problem.content.slice(0, 300)}
+Solution: ${journey.prd.sections.solution.content.slice(0, 300)}
+Users: ${journey.prd.sections.targetUsers.content.slice(0, 200)}
+Features: ${journey.prd.sections.features.content.slice(0, 400)}
 ${featuresContext}
-
-Regulatory Notes: ${journey.prd.sections.regulatory.content.slice(0, 400)}
 ${customizationContext}
-${aiInsightsContext}
 
-CREATIVE DESIGN MANDATE:
-Generate a JSON object with a "files" property containing an array of file objects. Each file must have:
-- path: relative file path (e.g., "index.html", "styles.css", "app.js")
-- content: complete, production-ready file content
+DESIGN:
+Layout: ${templateLayout}
+Accessibility: ${customizations.includeAccessibility ? 'WCAG 2.1 AA – aria-labels, focus rings, semantic HTML' : 'Basic semantic HTML'}
+Animations: ${customizations.includeAnimations ? 'CSS keyframe entrance effects, hover transforms' : 'Subtle hover transitions only'}
+Auth UI: ${customizations.includeAuth ? 'Login/signup modal with social login placeholders' : 'None'}
+Forms: ${customizations.includeForms ? 'Floating labels, inline validation, animated submit' : 'Simple form elements'}
+Charts: ${customizations.includeCharts ? 'SVG sparklines or canvas placeholders matching brand colors' : 'Data summary cards'}
+Responsive: ${customizations.includeResponsive ? 'Mobile-first CSS Grid/Flexbox, hamburger menu' : 'Desktop layout'}
+SEO: ${customizations.includeSEO ? 'Meta tags, Open Graph, JSON-LD HealthcareBusiness schema' : 'Basic meta tags'}
+Healthcare extras: inline SVG health icons, HIPAA trust badge, warm patient-centric copy, CSS custom properties for brand colors.
 
-Create a visually stunning ${templateInfo?.name} with these creative requirements:
-
-VISUAL EXCELLENCE:
-1. Use the brand colors (${journey.brand.colors.primary}, ${journey.brand.colors.secondary}, ${journey.brand.colors.accent}) throughout with creative CSS gradients, subtle glassmorphism effects, and layered depth
-2. ${selectedTemplate === 'landing' ? 'Craft a breathtaking hero section with a bold headline using CSS gradient text, an inspiring subheadline, and a prominent dual-CTA layout. Include a floating feature cards section with hover lift animations, a social proof section with animated counters, and a compelling bottom CTA band.' : selectedTemplate === 'webapp' ? 'Build an elegant dashboard with a collapsible sidebar, a sticky top navigation with avatar, a metrics overview with animated KPI cards, interactive data sections, and contextual action panels.' : 'Design a powerful analytics dashboard with a sidebar menu with icon labels, an overview grid of KPI cards with trend indicators, data tables with sorting indicators, a chart area placeholder with axis labels, and an activity feed panel.'}
-3. Typography hierarchy: Use bold large headings (48px+), medium subheadings, readable body text, and consistent caption styles
-4. Spacing rhythm: generous padding and whitespace to breathe and feel premium
-5. ${customizations.includeAccessibility ? 'Full WCAG 2.1 AA: semantic HTML5 landmark roles, aria-labels on all interactive elements, visible focus rings with offset, skip-navigation link, sufficient color contrast (4.5:1+), keyboard-navigable menus' : 'Semantic HTML5 structure with basic accessibility'}
-6. ${customizations.includeAnimations ? 'Rich micro-interactions: CSS keyframe animations for entrance effects (fade-in-up, slide-in), hover state transforms (scale, shadow, color), loading skeleton shimmer, smooth scroll behavior, and staggered animation delays for list items' : 'Clean static design with subtle hover transitions'}
-7. ${customizations.includeAuth ? 'Polished auth UI: modal-style login/signup with social login placeholders, password strength indicator, form field animations on focus, and a trust-building security badge' : 'Public-facing hero and feature presentation'}
-8. ${customizations.includeForms ? 'Beautiful form design: floating label inputs, real-time validation feedback with color-coded borders and icons, custom checkbox/radio styles, and an animated submit button' : 'Simple clean form elements'}
-9. ${customizations.includeCharts ? 'Rich data visualization area: styled chart containers with axis labels, legend, and sample SVG sparkline graphics or canvas placeholders styled to match brand colors' : 'Clean data summary cards with icon-metric-label layout'}
-10. ${customizations.includeResponsive ? 'Mobile-first responsive: CSS Grid and Flexbox layouts, responsive typography clamp(), hamburger menu for mobile with slide-in animation, and touch-friendly tap targets (min 44px)' : 'Desktop-optimized layout'}
-11. ${customizations.includeSEO ? 'Complete SEO: descriptive title tag, meta description, Open Graph tags, Twitter Card tags, canonical URL, JSON-LD structured data for HealthcareBusiness schema, and semantic heading hierarchy' : 'Basic meta tags'}
-
-HEALTHCARE-SPECIFIC CREATIVITY:
-- Use medical/health iconography (SVG icons inline) for features: heart-pulse, shield-check, user-doctor, chart-line, calendar-check
-- Include trust signals: HIPAA badge, SSL indicator, privacy statement snippet
-- Patient-centric language that is warm and empowering, not clinical and cold
-- Color psychology: use the brand's primary color for action, secondary for supporting info, accent for success/health indicators
-- Include a subtle background pattern or medical cross motif using CSS
-
-CODE QUALITY STANDARDS:
-- Well-commented code explaining key sections and design decisions
-- CSS custom properties (variables) for all brand colors and spacing tokens
-- Modular CSS organization (reset, variables, typography, layout, components, utilities)
-- Progressive enhancement: core content works without JS
-- Include 4-6 files (index.html, styles.css, app.js, and additional as needed)
-- All content must directly reference the brand name "${journey.brand.name}" and the product's healthcare mission
-
-Make this code immediately deployable as a compelling MVP that would impress investors and patients alike.`
+OUTPUT: Return ONLY a JSON object – no markdown fences, no extra text – with this exact shape:
+{"files":[{"path":"<filename>","content":"<complete file content>"}]}
+Limit to ${MAX_GENERATED_FILES} files maximum to keep the response concise.`
 
         const response = await window.spark.llm(prompt, 'gpt-4o', true)
-        const result = JSON.parse(response)
+        const result = safeJsonParse(response)
 
         if (!result.files || !Array.isArray(result.files) || result.files.length === 0) {
           throw new Error('Invalid response: No files generated')
@@ -1463,14 +1445,12 @@ Enhancement request: ${enhancement}
 Brand: ${journey.brand?.name || 'Not specified'}
 Personality: ${journey.brand?.personality ? `${journey.brand.personality.archetype} - ${journey.brand.personality.tone.join(', ')}` : 'Not specified'}
 
-Generate a JSON object with a "files" property containing an array of file objects with updated content that implements the enhancement. Include only the files that need to change. Each file must have:
-- path: relative file path
-- content: complete enhanced file content
-
-Make sure the enhancement is production-ready and well-integrated.`
+Return ONLY a JSON object – no markdown fences, no extra text – with this exact shape:
+{"files":[{"path":"<filename>","content":"<complete enhanced file content>"}]}
+Include only files that need to change. Make the enhancement production-ready and well-integrated.`
 
       const response = await window.spark.llm(prompt, 'gpt-4o', true)
-      const result = JSON.parse(response)
+      const result = safeJsonParse(response)
 
       const updatedFiles = generatedCode.files.map(existingFile => {
         const enhancedFile = result.files.find((f: any) => f.path === existingFile.path)
