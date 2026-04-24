@@ -12,9 +12,10 @@ import { CelebrationDialog } from '@/components/CelebrationDialog'
 import { WelcomeScreen } from '@/components/WelcomeScreen'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
-import { Sparkle, Sun, Moon, Globe } from '@phosphor-icons/react'
+import { Sun, Moon, Globe } from '@phosphor-icons/react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { parseRoute, navigate, Route } from '@/lib/router'
+import { SparkLogo } from '@/components/SparkLogo'
 
 function App() {
   const [journey, setJourney] = useKV<Journey>('healfounder-journey', createNewJourney())
@@ -140,10 +141,10 @@ function App() {
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div 
-              className="w-10 h-10 rounded-full bg-primary flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+              className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary via-accent to-primary-foreground/20 flex items-center justify-center cursor-pointer hover:opacity-80 transition-all hover:scale-105 shadow-lg"
               onClick={() => navigate({ view: 'dashboard' })}
             >
-              <Sparkle weight="fill" className="w-5 h-5 text-primary-foreground" />
+              <SparkLogo className="w-6 h-6 text-primary-foreground drop-shadow-sm" />
             </div>
             <div>
               <h1 className="text-xl font-bold font-heading">{t.appTitle}</h1>

@@ -1,8 +1,9 @@
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Sparkle, Lightbulb, BookOpen, Palette, FileText, Code, GithubLogo } from '@phosphor-icons/react'
+import { Lightbulb, BookOpen, Palette, FileText, Code, GithubLogo } from '@phosphor-icons/react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { motion } from 'framer-motion'
+import { SparkLogo } from '@/components/SparkLogo'
 
 interface WelcomeScreenProps {
   onStart: () => void
@@ -33,9 +34,9 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-            className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary mb-6"
+            className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-primary via-accent to-primary-foreground/20 mb-6 shadow-xl"
           >
-            <Sparkle weight="fill" className="w-10 h-10 text-primary-foreground" />
+            <SparkLogo animated className="w-12 h-12 text-primary-foreground drop-shadow-lg" />
           </motion.div>
           
           <motion.h1
@@ -106,8 +107,8 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
             </div>
           </div>
 
-          <Button size="lg" onClick={onStart} className="text-lg px-8 py-6">
-            <Sparkle className="w-5 h-5" weight="fill" />
+          <Button size="lg" onClick={onStart} className="text-lg px-8 py-6 gap-2">
+            <SparkLogo className="w-5 h-5" />
             {language === 'ar' ? 'ابدأ رحلتك الآن' : 'Start Your Journey'}
           </Button>
 
