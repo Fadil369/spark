@@ -37,12 +37,17 @@ function App() {
     setView('dashboard')
   }
 
+  const handlePhaseComplete = (updatedJourney: Journey) => {
+    setJourney(updatedJourney)
+    setView('dashboard')
+  }
+
   const renderPhase = () => {
     switch (journey.currentPhase) {
       case 'brainstorm':
         return <BrainstormPhase journey={journey} onComplete={handleBrainstormComplete} />
       case 'story':
-        return <StoryPhase journey={journey} />
+        return <StoryPhase journey={journey} onComplete={handlePhaseComplete} />
       case 'brand':
         return <BrandPhase journey={journey} />
       case 'prd':
