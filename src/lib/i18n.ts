@@ -149,7 +149,7 @@ export const translations = {
       story: 'القصة',
       brand: 'العلامة التجارية',
       prd: 'وثيقة المتطلبات',
-      code: 'الكود',
+      code: 'البرمجة',
       github: 'جيت هاب',
     },
 

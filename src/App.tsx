@@ -9,14 +9,17 @@ import { BrainstormPhase } from '@/components/phases/BrainstormPhase'
 import { StoryPhase, BrandPhase, CodePhase, GitHubPhase } from '@/components/phases/OtherPhases'
 import { PRDPhase } from '@/components/phases/PRDPhase'
 import { CelebrationDialog } from '@/components/CelebrationDialog'
+import { WelcomeScreen } from '@/components/WelcomeScreen'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
 import { Sparkle, Sun, Moon, Globe } from '@phosphor-icons/react'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { parseRoute, navigate, Route } from '@/lib/router'
 
 function App() {
   const [journey, setJourney] = useKV<Journey>('healfounder-journey', createNewJourney())
-  const [view, setView] = useState<'dashboard' | 'phase'>('dashboard')
+  const [hasSeenWelcome, setHasSeenWelcome] = useKV<boolean>('healfounder-seen-welcome', false)
+  const [route, setRoute] = useState<Route>(() => parseRoute(window.location.hash))
   const [isDark, setIsDark] = useState(() => {
     return localStorage.getItem('healfounder-theme') === 'dark' ||
       (!localStorage.getItem('healfounder-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)
@@ -32,6 +35,14 @@ function App() {
   const { language, setLanguage, t, isRTL } = useLanguage()
 
   useEffect(() => {
+    const handleHashChange = () => {
+      setRoute(parseRoute(window.location.hash))
+    }
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
+
+  useEffect(() => {
     if (isDark) {
       document.documentElement.classList.add('dark')
       localStorage.setItem('healfounder-theme', 'dark')
@@ -41,8 +52,15 @@ function App() {
     }
   }, [isDark])
 
-  if (!journey) {
+  if (!journey || hasSeenWelcome === undefined) {
     return null
+  }
+
+  if (!hasSeenWelcome) {
+    return <WelcomeScreen onStart={() => {
+      setHasSeenWelcome(true)
+      navigate({ view: 'dashboard' })
+    }} />
   }
 
   const handlePhaseSelect = (phase: PhaseKey) => {
@@ -51,7 +69,7 @@ function App() {
         if (!current) return createNewJourney()
         return { ...current, currentPhase: phase }
       })
-      setView('phase')
+      navigate({ view: 'phase', phase })
     }
   }
 
@@ -82,7 +100,7 @@ function App() {
 
   const handleCelebrationClose = () => {
     setCelebration((prev) => ({ ...prev, open: false }))
-    setView('dashboard')
+    navigate({ view: 'dashboard' })
   }
 
   const handleCelebrationContinue = () => {
@@ -92,14 +110,15 @@ function App() {
         if (!current) return createNewJourney()
         return { ...current, currentPhase: celebration.nextPhase! }
       })
-      setView('phase')
+      navigate({ view: 'phase', phase: celebration.nextPhase })
     } else {
-      setView('dashboard')
+      navigate({ view: 'dashboard' })
     }
   }
 
   const renderPhase = () => {
-    switch (journey.currentPhase) {
+    const currentPhase = route.view === 'phase' ? route.phase : journey.currentPhase
+    switch (currentPhase) {
       case 'brainstorm':
         return <BrainstormPhase journey={journey} onComplete={handleBrainstormComplete} />
       case 'story':
@@ -120,7 +139,10 @@ function App() {
       <header className="bg-card border-b border-border sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+            <div 
+              className="w-10 h-10 rounded-full bg-primary flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => navigate({ view: 'dashboard' })}
+            >
               <Sparkle weight="fill" className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
@@ -130,7 +152,6 @@ function App() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Language toggle */}
             <Button
               variant="ghost"
               size="sm"
@@ -142,7 +163,6 @@ function App() {
               <span>{language === 'en' ? 'العربية' : 'English'}</span>
             </Button>
 
-            {/* Dark mode toggle */}
             <Button
               variant="ghost"
               size="icon"
@@ -152,8 +172,8 @@ function App() {
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </Button>
 
-            {view === 'phase' && (
-              <Button variant="outline" onClick={() => setView('dashboard')}>
+            {route.view === 'phase' && (
+              <Button variant="outline" onClick={() => navigate({ view: 'dashboard' })}>
                 {t.backToDashboard}
               </Button>
             )}
@@ -161,7 +181,7 @@ function App() {
         </div>
       </header>
 
-      {view === 'dashboard' ? (
+      {route.view === 'dashboard' ? (
         <>
           <PhaseNavigation journey={journey} onPhaseSelect={handlePhaseSelect} />
           
@@ -178,7 +198,7 @@ function App() {
             <div className="text-center">
               <Button
                 size="lg"
-                onClick={() => setView('phase')}
+                onClick={() => navigate({ view: 'phase', phase: journey.currentPhase })}
                 className="text-lg px-8"
               >
                 {journey.phases[journey.currentPhase].completed ? t.continueJourney : t.startCurrentPhase}
