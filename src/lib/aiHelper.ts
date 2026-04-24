@@ -20,15 +20,40 @@ export class AIHelper {
   }
 
   async generateHealthcareConcepts(input: string): Promise<string[]> {
-    const languageInstruction = this.language === 'ar' 
-      ? 'Generate the concepts in Arabic language.' 
-      : 'Generate the concepts in English language.'
-    
-    const prompt = window.spark.llmPrompt`You are a healthcare startup advisor. Based on these healthcare problems or themes: "${input}", generate 8 related healthcare concepts, keywords, or problem areas. ${languageInstruction} Return a JSON object with a single property "keywords" that contains an array of short phrases (2-4 words each).`
-    
-    const response = await window.spark.llm(prompt, this.defaultModel, true)
-    const data = JSON.parse(response)
-    return data.keywords || []
+    try {
+      if (!input || input.trim().length === 0) {
+        throw new Error('Input text is required to generate healthcare concepts')
+      }
+
+      const languageInstruction = this.language === 'ar' 
+        ? 'Generate the concepts in Arabic language.' 
+        : 'Generate the concepts in English language.'
+      
+      const prompt = window.spark.llmPrompt`You are a healthcare startup advisor. Based on these healthcare problems or themes: "${input}", generate 8 related healthcare concepts, keywords, or problem areas. ${languageInstruction} Return a JSON object with a single property "keywords" that contains an array of short phrases (2-4 words each).`
+      
+      const response = await window.spark.llm(prompt, this.defaultModel, true)
+      
+      if (!response || response.trim().length === 0) {
+        throw new Error('AI returned empty response for healthcare concepts generation')
+      }
+
+      const data = JSON.parse(response)
+      
+      if (!data.keywords || !Array.isArray(data.keywords)) {
+        throw new Error(`AI response missing 'keywords' array. Received: ${JSON.stringify(data).substring(0, 200)}`)
+      }
+
+      if (data.keywords.length === 0) {
+        throw new Error('AI generated no keywords. Try providing more specific healthcare themes.')
+      }
+
+      return data.keywords
+    } catch (error: any) {
+      if (error instanceof SyntaxError) {
+        throw new Error(`Failed to parse AI response as JSON. Raw response: ${error.message}`)
+      }
+      throw new Error(`Healthcare concept generation failed: ${error.message || 'Unknown error'}`)
+    }
   }
 
   async refineConcept(input: string, keywords: string[]): Promise<{

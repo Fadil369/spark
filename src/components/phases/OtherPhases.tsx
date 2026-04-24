@@ -82,15 +82,26 @@ Write a 3-4 paragraph founder story that:
 Make it authentic, specific to healthcare, and compelling. Return only the narrative text, no JSON.`
       
       const narrative = await window.spark.llm(prompt, 'gpt-4o')
+      
+      if (!narrative || narrative.trim().length === 0) {
+        throw new Error('AI returned empty response for story generation')
+      }
+
       setGeneratedNarrative(narrative.trim())
       
       await scoreNarrative(narrative)
       
       setStep('review')
       toast.success('Your founder story has been generated!')
-    } catch (error) {
-      toast.error('Failed to generate narrative. Please try again.')
-      console.error(error)
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Unknown error occurred'
+      toast.error(`Story generation failed: ${errorMessage}`)
+      console.error('[Story Generation Error]', {
+        error: errorMessage,
+        formData,
+        tone,
+        timestamp: new Date().toISOString()
+      })
     } finally {
       setIsGenerating(false)
     }
@@ -1357,12 +1368,24 @@ Make the code immediately usable as an MVP foundation.`
         setGeneratedCode(code)
         setStep('preview')
         successToast('Code generated successfully! 🚀')
-      } catch (error) {
-        console.error(`Code generation error (attempt ${attemptNumber + 1}/${maxRetries + 1}):`, error)
+      } catch (error: any) {
+        const errorMessage = error?.message || 'Unknown error occurred'
+        const errorType = error?.name || 'Error'
+        
+        console.error(`[Code Generation Error] Attempt ${attemptNumber + 1}/${maxRetries + 1}:`, {
+          errorType,
+          errorMessage,
+          template: selectedTemplate,
+          framework: selectedFramework,
+          customizations,
+          selectedFeatures,
+          timestamp: new Date().toISOString(),
+          stack: error?.stack
+        })
         
         if (attemptNumber < maxRetries) {
           const delayMs = Math.pow(2, attemptNumber) * 1000
-          toast.error(`Generation failed. Retrying in ${delayMs / 1000}s... (Attempt ${attemptNumber + 1}/${maxRetries + 1})`)
+          toast.error(`Generation failed (${errorType}): ${errorMessage}. Retrying in ${delayMs / 1000}s... (Attempt ${attemptNumber + 1}/${maxRetries + 1})`)
           
           await new Promise(resolve => setTimeout(resolve, delayMs))
           
@@ -1375,9 +1398,26 @@ Make the code immediately usable as an MVP foundation.`
 
     try {
       await attemptGeneration(0)
-    } catch (error) {
-      console.error('Code generation failed after all retries:', error)
-      toast.error(`Failed to generate code after ${maxRetries + 1} attempts. Please try again.`)
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Unknown error occurred'
+      const errorType = error?.name || 'Error'
+      
+      console.error('[Code Generation Failed - All Retries Exhausted]:', {
+        errorType,
+        errorMessage,
+        totalAttempts: maxRetries + 1,
+        template: selectedTemplate,
+        framework: selectedFramework,
+        journeyContext: {
+          hasBrand: !!journey.brand,
+          hasPRD: !!journey.prd,
+          hasConcept: !!journey.concept
+        },
+        timestamp: new Date().toISOString(),
+        stack: error?.stack
+      })
+      
+      toast.error(`Code generation failed after ${maxRetries + 1} attempts: ${errorMessage}. Check console for details.`)
       setStep('customize')
     } finally {
       setIsGenerating(false)

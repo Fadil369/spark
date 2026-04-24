@@ -15,7 +15,7 @@ export async function createGitHubRepository(
     const user = await window.spark.user()
     
     if (!user || !user.isOwner) {
-      throw new Error('User authentication required')
+      throw new Error('GitHub authentication required. Please ensure you are logged in.')
     }
 
     const octokit = new Octokit({
@@ -29,6 +29,18 @@ export async function createGitHubRepository(
       .replace(/^-|-$/g, '')
       .slice(0, 100)
 
+    if (!sanitizedName || sanitizedName.length === 0) {
+      throw new Error(`Invalid repository name after sanitization. Original name: "${options.name}"`)
+    }
+
+    console.log('[GitHub] Creating repository:', {
+      sanitizedName,
+      originalName: options.name,
+      isPrivate: options.isPrivate,
+      fileCount: options.files.length,
+      timestamp: new Date().toISOString()
+    })
+
     const repoData = {
       name: sanitizedName,
       description: options.description,
@@ -39,8 +51,19 @@ export async function createGitHubRepository(
 
     const { data: repo } = await octokit.rest.repos.createForAuthenticatedUser(repoData)
 
+    console.log('[GitHub] Repository created successfully:', {
+      name: repo.name,
+      url: repo.html_url,
+      owner: repo.owner.login
+    })
+
     if (options.files.length > 0) {
       const defaultBranch = repo.default_branch || 'main'
+      
+      console.log('[GitHub] Committing files:', {
+        fileCount: options.files.length,
+        branch: defaultBranch
+      })
       
       const { data: refData } = await octokit.rest.git.getRef({
         owner: repo.owner.login,
@@ -56,13 +79,17 @@ export async function createGitHubRepository(
 
       const blobs = await Promise.all(
         options.files.map(async (file) => {
-          const { data } = await octokit.rest.git.createBlob({
-            owner: repo.owner.login,
-            repo: repo.name,
-            content: btoa(unescape(encodeURIComponent(file.content))),
-            encoding: 'base64',
-          })
-          return { path: file.path, sha: data.sha, mode: '100644' as const }
+          try {
+            const { data } = await octokit.rest.git.createBlob({
+              owner: repo.owner.login,
+              repo: repo.name,
+              content: btoa(unescape(encodeURIComponent(file.content))),
+              encoding: 'base64',
+            })
+            return { path: file.path, sha: data.sha, mode: '100644' as const }
+          } catch (error: any) {
+            throw new Error(`Failed to create blob for file "${file.path}": ${error.message}`)
+          }
         })
       )
 
@@ -88,6 +115,11 @@ export async function createGitHubRepository(
         sha: newCommit.sha,
       })
 
+      console.log('[GitHub] Files committed successfully:', {
+        commitSha: newCommit.sha,
+        fileCount: options.files.length
+      })
+
       return {
         name: repo.name,
         url: repo.html_url,
@@ -102,14 +134,25 @@ export async function createGitHubRepository(
       createdAt: Date.now(),
     }
   } catch (error: any) {
+    const errorContext = {
+      status: error.status,
+      message: error.message,
+      repoName: options.name,
+      timestamp: new Date().toISOString()
+    }
+
+    console.error('[GitHub Error]', errorContext)
+
     if (error.status === 401) {
-      throw new Error('GitHub authentication failed. Please check your credentials.')
+      throw new Error('GitHub authentication failed. Please check your credentials and ensure you have granted the necessary permissions.')
+    } else if (error.status === 403) {
+      throw new Error('GitHub access forbidden. You may have reached rate limits or lack permissions to create repositories.')
     } else if (error.status === 422) {
-      throw new Error('Repository name already exists or is invalid. Please try a different name.')
+      throw new Error(`Repository name "${options.name}" already exists or is invalid. Please try a different name.`)
     } else if (error.message) {
-      throw new Error(error.message)
+      throw new Error(`GitHub operation failed: ${error.message}`)
     } else {
-      throw new Error('Failed to create GitHub repository. Please try again.')
+      throw new Error('Failed to create GitHub repository. Please check your internet connection and try again.')
     }
   }
 }
