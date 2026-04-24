@@ -14,7 +14,6 @@ import { Progress } from '@/components/ui/progress'
 import { AILoadingScreen } from '@/components/AILoadingScreen'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { LiveCodePreview } from '@/components/LiveCodePreview'
-import { BrainsaitEnterpriseOffer } from '@/components/BrainsaitEnterpriseOffer'
 import { DeploymentInstructions } from '@/components/DeploymentInstructions'
 import { getFrameworkBestPractices, getTemplateArchitecture, type FrameworkType, type TemplateType } from '@/lib/frameworkBestPractices'
 
@@ -2196,14 +2195,12 @@ Include only files that need to change. Make the enhancement production-ready an
 }
 
 export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
-  const [step, setStep] = useState<'summary' | 'choose-deployment' | 'configure' | 'deployment-options' | 'brainsait-configure' | 'creating' | 'success'>('summary')
-  const [deploymentChoice, setDeploymentChoice] = useState<'personal' | 'brainsait' | null>(null)
+  const [step, setStep] = useState<'summary' | 'configure' | 'deployment-options' | 'creating' | 'success'>('summary')
+  const [deploymentChoice, setDeploymentChoice] = useState<'personal' | null>(null)
   const [repoName, setRepoName] = useState('')
   const [isPrivate, setIsPrivate] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [founderEmail, setFounderEmail] = useState('')
-  const [companyName, setCompanyName] = useState(journey.brand?.name || '')
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
   const [includeDocker, setIncludeDocker] = useState(true)
   const [includeCICD, setIncludeCICD] = useState(true)
@@ -2306,10 +2303,8 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
         <h1 className="text-4xl font-bold font-heading">{t.github.title}</h1>
         <p className="text-lg text-muted-foreground">
           {step === 'summary' ? t.github.subtitle : 
-           step === 'choose-deployment' ? t.github.subtitleChoose :
            step === 'configure' ? t.github.subtitleConfigure :
            step === 'deployment-options' ? 'Select deployment platforms and configurations' :
-           step === 'brainsait-configure' ? t.github.subtitleJoin :
            step === 'creating' ? t.github.subtitleCreating :
            t.github.subtitleSuccess}
         </p>
@@ -2372,173 +2367,77 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle>{t.github.chooseDeployment}</CardTitle>
+              <CardTitle>{t.github.deployYourCode}</CardTitle>
               <CardDescription>
-                {t.github.chooseDeploymentDesc}
+                {t.github.readyToDeployDesc}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <button
-                  onClick={() => {
-                    setDeploymentChoice('personal')
-                    setStep('configure')
-                  }}
-                  className="w-full p-6 rounded-lg border-2 border-border hover:border-primary/70 transition-all text-left"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                      <Rocket className="w-6 h-6" weight="fill" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg mb-1">{t.github.personalGitHub}</h3>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        {t.github.personalDesc}
-                      </p>
-                      <div className="flex flex-wrap gap-2 text-xs">
-                        <Badge variant="secondary">{t.github.free}</Badge>
-                        <Badge variant="secondary">{t.github.immediateSetup}</Badge>
-                        <Badge variant="secondary">{t.github.fullControl}</Badge>
-                      </div>
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setDeploymentChoice('brainsait')
-                    setStep('brainsait-configure')
-                  }}
-                  className="w-full p-6 rounded-lg border-2 border-purple-500 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950 dark:to-blue-950 hover:border-purple-600 transition-all text-left relative overflow-hidden"
-                >
-                  <div className="absolute top-0 right-0 bg-gradient-to-l from-yellow-400 to-orange-400 text-xs font-bold px-3 py-1 rounded-bl-lg text-gray-900">
-                    {t.github.recommended}
-                  </div>
-                  <div className="flex items-start gap-4 mt-2">
-                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center flex-shrink-0">
-                      <Sparkle className="w-6 h-6 text-white" weight="fill" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg mb-1 flex items-center gap-2">
-                        {t.github.brainsaitEnterprise}
-                        <Badge className="bg-yellow-400 text-gray-900 text-[10px] px-1.5 py-0">{t.github.free}</Badge>
-                      </h3>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        {t.github.brainsaitDesc}
-                      </p>
-                      <div className="flex flex-wrap gap-2 text-xs">
-                        <Badge className="bg-purple-600 text-white">{t.github.enterpriseGitHub}</Badge>
-                        <Badge className="bg-blue-600 text-white">{t.github.freeHosting}</Badge>
-                        <Badge className="bg-green-600 text-white">{t.github.mentorship}</Badge>
-                        <Badge className="bg-orange-600 text-white">{t.github.valueAmount}</Badge>
-                      </div>
-                    </div>
-                  </div>
-                </button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {step === 'brainsait-configure' && (
-        <div className="space-y-6">
-          <BrainsaitEnterpriseOffer />
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>{t.github.joinBrainsait}</CardTitle>
-              <CardDescription>
-                {t.github.submitApplication}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <label htmlFor="founder-email" className="text-sm font-semibold">
-                  {t.github.yourEmail}
-                </label>
-                <input
-                  id="founder-email"
-                  type="email"
-                  value={founderEmail}
-                  onChange={(e) => setFounderEmail(e.target.value)}
-                  placeholder={t.github.emailPlaceholder}
-                  className="w-full px-4 py-2 rounded-lg border border-input bg-background"
-                />
-                <p className="text-xs text-muted-foreground">
-                  {t.github.emailDesc}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="company-name" className="text-sm font-semibold">
-                  {t.github.companyName}
-                </label>
-                <input
-                  id="company-name"
-                  type="text"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  placeholder={t.github.companyPlaceholder}
-                  className="w-full px-4 py-2 rounded-lg border border-input bg-background"
-                />
-              </div>
-
-              <div className="p-4 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border border-green-200 dark:border-green-800">
+              <div className="p-4 rounded-lg bg-muted/50 border border-border">
                 <div className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" weight="bold" />
-                  <div className="flex-1 text-sm">
-                    <p className="font-semibold mb-2 text-green-900 dark:text-green-100">{t.github.whatHappensNext}</p>
-                    <ol className="text-green-700 dark:text-green-300 text-xs space-y-1.5 ml-4 list-decimal">
-                      <li>{t.github.nextStep1}</li>
-                      <li>{t.github.nextStep2}</li>
-                      <li>{t.github.nextStep3}</li>
-                      <li>{t.github.nextStep4}</li>
-                      <li>{t.github.nextStep5}</li>
+                  <Code className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" weight="fill" />
+                  <div className="flex-1 space-y-2">
+                    <h3 className="font-semibold">{t.github.downloadCodeFiles}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {t.github.downloadCodeDesc}
+                    </p>
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {journey.code?.files.map((file, idx) => (
+                        <Button
+                          key={idx}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const blob = new Blob([file.content], { type: 'text/plain' })
+                            const url = URL.createObjectURL(blob)
+                            const a = document.createElement('a')
+                            a.href = url
+                            a.download = file.path
+                            a.click()
+                            URL.revokeObjectURL(url)
+                            toast.success(`Downloaded ${file.path}`)
+                          }}
+                        >
+                          {file.path}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800">
+                <div className="flex items-start gap-3">
+                  <GitBranch className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" weight="fill" />
+                  <div className="flex-1 space-y-2">
+                    <h3 className="font-semibold text-blue-900 dark:text-blue-100">{t.github.manualGitHubSetup}</h3>
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      {t.github.manualSetupDesc}
+                    </p>
+                    <ol className="text-sm text-blue-700 dark:text-blue-300 space-y-1 list-decimal ml-4">
+                      <li>{t.github.manualStep1}</li>
+                      <li>{t.github.manualStep2}</li>
+                      <li>{t.github.manualStep3}</li>
+                      <li>{t.github.manualStep4}</li>
                     </ol>
                   </div>
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex gap-3">
-              <Button variant="outline" onClick={() => setStep('summary')}>
-                {t.back}
-              </Button>
+            <CardFooter>
               <Button 
-                onClick={async () => {
-                  if (!founderEmail.trim() || !companyName.trim()) {
-                    toast.error('Please fill in all fields')
-                    return
+                onClick={() => {
+                  if (onComplete) {
+                    const updatedJourney = completePhase(journey, 'github')
+                    onComplete(updatedJourney)
                   }
-                  
-                  setIsCreating(true)
-                  try {
-                    toast.success(t.github.applicationSubmitted)
-                    setTimeout(() => {
-                      setStep('success')
-                      if (onComplete) {
-                        const updatedJourney = completePhase(journey, 'github')
-                        onComplete(updatedJourney)
-                      }
-                    }, 1500)
-                  } catch (err) {
-                    toast.error('Failed to submit application')
-                  } finally {
-                    setIsCreating(false)
-                  }
+                  setStep('success')
                 }}
-                disabled={!founderEmail.trim() || !companyName.trim() || isCreating}
-                className="flex-1"
+                className="w-full"
                 size="lg"
               >
-                {isCreating ? (
-                  <>{t.github.submittingApplication}</>
-                ) : (
-                  <>
-                    <Sparkle className="mr-2" weight="fill" />
-                    {t.github.applyForBrainsait}
-                  </>
-                )}
+                <Check className="mr-2" weight="bold" />
+                {t.github.completeJourney}
               </Button>
             </CardFooter>
           </Card>
