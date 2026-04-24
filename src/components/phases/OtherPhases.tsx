@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Journey, Story, Brand, BrandPersonality, GeneratedCode } from '@/lib/types'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, Sparkle, Brain, Heart, Rocket, Shield, Target, Users, Check } from '@phosphor-icons/react'
+import { ArrowRight, Sparkle, Brain, Heart, Rocket, Shield, Target, Users, Check, Code, ListChecks } from '@phosphor-icons/react'
 import { Textarea } from '@/components/ui/textarea'
 import { Slider } from '@/components/ui/slider'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -15,6 +15,7 @@ import { AILoadingScreen } from '@/components/AILoadingScreen'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { LiveCodePreview } from '@/components/LiveCodePreview'
 import { BrainsaitEnterpriseOffer } from '@/components/BrainsaitEnterpriseOffer'
+import { getFrameworkBestPractices, getTemplateArchitecture, generateFrameworkSpecificPrompt, type FrameworkType, type TemplateType } from '@/lib/frameworkBestPractices'
 
 interface CompletionPhaseProps {
   journey: Journey
@@ -1293,8 +1294,21 @@ ${aiInsights.recommendations.map(r => `- ${r}`).join('\n')}
 
 Security Considerations:
 ${aiInsights.securityNotes.map(n => `- ${n}`).join('\n')}` : ''
+
+        const frameworkGuide = getFrameworkBestPractices(selectedFramework as FrameworkType)
+        const templateGuide = getTemplateArchitecture(selectedTemplate)
         
-        const prompt = window.spark.llmPrompt`You are a world-class healthcare UI/UX engineer and creative developer. Generate a stunning, production-ready ${selectedTemplate} that looks like it was crafted by a top-tier design agency specializing in healthcare technology.
+        const frameworkSpecificGuidance = generateFrameworkSpecificPrompt(
+          selectedFramework as FrameworkType,
+          selectedTemplate,
+          journey.brand,
+          journey.prd,
+          customizations
+        )
+        
+        const prompt = window.spark.llmPrompt`You are a world-class ${frameworkGuide.name} engineer specializing in healthcare applications. Generate a stunning, production-ready ${selectedTemplate} that follows ${frameworkGuide.name} best practices and looks like it was crafted by a top-tier design agency.
+
+${frameworkSpecificGuidance}
 
 BRAND IDENTITY:
 Name: ${journey.brand.name}
@@ -1611,6 +1625,88 @@ Make sure the enhancement is production-ready and well-integrated.`
 
       {step === 'customize' && (
         <div className="space-y-6">
+          <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950 border-indigo-200 dark:border-indigo-800">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <ListChecks weight="fill" className="text-indigo-600" />
+                    {selectedFramework.toUpperCase()} Best Practices Applied
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    Your code will follow {getFrameworkBestPractices(selectedFramework as FrameworkType).name} industry standards
+                  </CardDescription>
+                </div>
+                <Code className="w-12 h-12 text-indigo-300" weight="duotone" />
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm flex items-center gap-2">
+                    <Shield weight="fill" className="w-4 h-4 text-indigo-600" />
+                    Security & Healthcare Compliance
+                  </h3>
+                  <ul className="space-y-1 text-xs">
+                    {getFrameworkBestPractices(selectedFramework as FrameworkType).securityPractices.slice(0, 3).map((practice, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="text-indigo-600 mt-0.5">✓</span>
+                        <span className="text-muted-foreground">{practice}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm flex items-center gap-2">
+                    <Target weight="fill" className="w-4 h-4 text-purple-600" />
+                    Performance & Optimization
+                  </h3>
+                  <ul className="space-y-1 text-xs">
+                    {getFrameworkBestPractices(selectedFramework as FrameworkType).performanceOptimizations.slice(0, 3).map((opt, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="text-purple-600 mt-0.5">⚡</span>
+                        <span className="text-muted-foreground">{opt}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm flex items-center gap-2">
+                    <Users weight="fill" className="w-4 h-4 text-green-600" />
+                    Accessibility (WCAG 2.1 AA)
+                  </h3>
+                  <ul className="space-y-1 text-xs">
+                    {getFrameworkBestPractices(selectedFramework as FrameworkType).accessibilityGuidelines.slice(0, 3).map((guideline, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="text-green-600 mt-0.5">♿</span>
+                        <span className="text-muted-foreground">{guideline}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-sm flex items-center gap-2">
+                    <Brain weight="fill" className="w-4 h-4 text-blue-600" />
+                    Component Architecture
+                  </h3>
+                  <ul className="space-y-1 text-xs">
+                    {getFrameworkBestPractices(selectedFramework as FrameworkType).componentArchitecture.slice(0, 3).map((arch, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="text-blue-600 mt-0.5">🏗</span>
+                        <span className="text-muted-foreground">{arch}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+              <div className="mt-4 p-3 rounded-lg bg-white/50 dark:bg-black/20 border border-indigo-200 dark:border-indigo-800">
+                <p className="text-xs text-muted-foreground">
+                  <strong className="text-indigo-600">Healthcare-Specific:</strong> Your code will include {getFrameworkBestPractices(selectedFramework as FrameworkType).healthcareSpecific.length}+ healthcare-specific implementations including HIPAA-compliant patterns, patient data handling, and medical UI components.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
           {aiInsights && (
             <Card className="bg-gradient-to-r from-accent/10 to-primary/10 border-accent/30">
               <CardHeader>
@@ -1833,7 +1929,7 @@ Make sure the enhancement is production-ready and well-integrated.`
               <Sparkle className="w-12 h-12 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary" weight="fill" />
             </div>
             <div>
-              <h3 className="text-xl font-semibold mb-2">Crafting Your Startup's Digital Presence...</h3>
+              <h3 className="text-xl font-semibold mb-2">Crafting Your {getFrameworkBestPractices(selectedFramework as FrameworkType).name} Application...</h3>
               <p className="text-muted-foreground">
                 Building a stunning {templates.find(t => t.type === selectedTemplate)?.name} for <strong>{journey.brand?.name || 'your brand'}</strong>
               </p>
@@ -1847,7 +1943,9 @@ Make sure the enhancement is production-ready and well-integrated.`
               <p>✨ Interpreting your brand personality & colors</p>
               <p>🏥 Infusing healthcare-specific design patterns</p>
               <p>🎨 Crafting pixel-perfect UI components</p>
-              <p>⚡ Optimizing for performance & accessibility</p>
+              <p>⚡ Applying {selectedFramework.toUpperCase()} best practices & optimizations</p>
+              <p>🔒 Implementing healthcare security standards</p>
+              <p>♿ Ensuring WCAG 2.1 AA accessibility compliance</p>
               <p className="animate-pulse">🚀 Assembling production-ready code files...</p>
             </div>
           </CardContent>
