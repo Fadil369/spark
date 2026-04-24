@@ -15,6 +15,7 @@ import { AILoadingScreen } from '@/components/AILoadingScreen'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { LiveCodePreview } from '@/components/LiveCodePreview'
 import { BrainsaitEnterpriseOffer } from '@/components/BrainsaitEnterpriseOffer'
+import { DeploymentInstructions } from '@/components/DeploymentInstructions'
 import { getFrameworkBestPractices, getTemplateArchitecture, generateFrameworkSpecificPrompt, type FrameworkType, type TemplateType } from '@/lib/frameworkBestPractices'
 
 interface CompletionPhaseProps {
@@ -2697,6 +2698,12 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
                   </div>
                 </div>
               </div>
+
+              <DeploymentInstructions 
+                repoUrl={journey.githubRepo.url}
+                repoName={journey.githubRepo.name}
+                framework="html"
+              />
 
               <div className="space-y-3">
                 <h3 className="font-semibold text-sm">{t.github.nextStepsGitHub}</h3>
