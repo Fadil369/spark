@@ -790,17 +790,17 @@ Return a JSON object with a single property "taglines" containing an array of ex
                 <Sparkle className="w-6 h-6 text-accent" weight="fill" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold mb-2">Your Brand Personality: {brandPersonality.archetype}</h3>
-                <p className="text-sm text-muted-foreground mb-3">{brandPersonality.targetFeeling}</p>
+                <h3 className="font-semibold mb-2">Your Brand Personality: {String(brandPersonality.archetype || '')}</h3>
+                <p className="text-sm text-muted-foreground mb-3">{String(brandPersonality.targetFeeling || '')}</p>
                 <div className="flex flex-wrap gap-2">
-                  {brandPersonality.tone.map((t) => (
-                    <Badge key={t} variant="secondary" className="capitalize">
-                      {t}
+                  {Array.isArray(brandPersonality.tone) && brandPersonality.tone.map((t, idx) => (
+                    <Badge key={`${t}-${idx}`} variant="secondary" className="capitalize">
+                      {String(t)}
                     </Badge>
                   ))}
-                  {brandPersonality.values.map((v) => (
-                    <Badge key={v} variant="outline" className="capitalize">
-                      {v}
+                  {Array.isArray(brandPersonality.values) && brandPersonality.values.map((v, idx) => (
+                    <Badge key={`${v}-${idx}`} variant="outline" className="capitalize">
+                      {String(v)}
                     </Badge>
                   ))}
                 </div>
