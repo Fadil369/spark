@@ -377,21 +377,7 @@ export function BrandPhase({ journey }: CompletionPhaseProps) {
   )
 }
 
-export function PRDPhase({ journey }: CompletionPhaseProps) {
-  return (
-    <div className="max-w-4xl mx-auto">
-      <Card>
-        <CardHeader>
-          <CardTitle>PRD Phase - Coming Soon</CardTitle>
-          <CardDescription>Build a functional product requirements document</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">Document your product requirements</p>
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
+
 
 export function CodePhase({ journey }: CompletionPhaseProps) {
   return (

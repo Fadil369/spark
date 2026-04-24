@@ -6,7 +6,8 @@ import { PhaseNavigation } from '@/components/PhaseNavigation'
 import { GameStats } from '@/components/GameStats'
 import { BadgeShowcase } from '@/components/BadgeShowcase'
 import { BrainstormPhase } from '@/components/phases/BrainstormPhase'
-import { StoryPhase, BrandPhase, PRDPhase, CodePhase, GitHubPhase } from '@/components/phases/OtherPhases'
+import { StoryPhase, BrandPhase, CodePhase, GitHubPhase } from '@/components/phases/OtherPhases'
+import { PRDPhase } from '@/components/phases/PRDPhase'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
 import { Sparkle } from '@phosphor-icons/react'
@@ -51,7 +52,7 @@ function App() {
       case 'brand':
         return <BrandPhase journey={journey} />
       case 'prd':
-        return <PRDPhase journey={journey} />
+        return <PRDPhase journey={journey} onComplete={handlePhaseComplete} />
       case 'code':
         return <CodePhase journey={journey} />
       case 'github':
