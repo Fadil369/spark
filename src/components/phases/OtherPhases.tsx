@@ -1294,9 +1294,9 @@ ${aiInsights.recommendations.map(r => `- ${r}`).join('\n')}
 Security Considerations:
 ${aiInsights.securityNotes.map(n => `- ${n}`).join('\n')}` : ''
         
-        const prompt = window.spark.llmPrompt`You are an expert healthcare web developer. Generate a complete, production-quality code structure for a ${selectedTemplate}.
+        const prompt = window.spark.llmPrompt`You are a world-class healthcare UI/UX engineer and creative developer. Generate a stunning, production-ready ${selectedTemplate} that looks like it was crafted by a top-tier design agency specializing in healthcare technology.
 
-BRAND INFORMATION:
+BRAND IDENTITY:
 Name: ${journey.brand.name}
 Tagline: ${journey.brand.tagline}
 Primary Color: ${journey.brand.colors.primary}
@@ -1318,33 +1318,42 @@ Regulatory Notes: ${journey.prd.sections.regulatory.content.slice(0, 400)}
 ${customizationContext}
 ${aiInsightsContext}
 
-REQUIREMENTS:
+CREATIVE DESIGN MANDATE:
 Generate a JSON object with a "files" property containing an array of file objects. Each file must have:
-- path: relative file path (e.g., "index.html", "app.js", "styles.css")
+- path: relative file path (e.g., "index.html", "styles.css", "app.js")
 - content: complete, production-ready file content
 
-Create a ${templateInfo?.name} with:
-1. Modern, accessible HTML5 structure
-2. ${selectedTemplate === 'landing' ? 'Hero section with compelling value prop, features grid (minimum 3 features from PRD), social proof/testimonials section, and prominent CTA' : selectedTemplate === 'webapp' ? 'Navigation header, main dashboard view showing key user data, interactive forms for primary actions, user profile section' : 'Sidebar navigation with key admin sections, analytics overview dashboard with KPI cards, data table for management, and filter/search capabilities'}
-3. CSS styling that matches the brand colors and personality
-4. Responsive design (mobile-first approach)
-5. ${customizations.includeAccessibility ? 'Full WCAG 2.1 AA compliance (semantic HTML, ARIA labels, keyboard navigation, focus indicators)' : 'Basic accessibility'}
-6. ${customizations.includeAnimations ? 'Smooth transitions and micro-interactions using CSS animations' : 'Minimal animations'}
-7. ${customizations.includeAuth ? 'Login/signup UI components' : 'Public-facing UI'}
-8. ${customizations.includeForms ? 'Form validation UI with error states' : 'Basic forms'}
-9. ${customizations.includeCharts ? 'Data visualization components (use Chart.js or similar library)' : 'Static data displays'}
-10. Healthcare-appropriate imagery placeholders and medical iconography
-11. HIPAA-conscious design patterns (privacy, security indicators)
-12. Clear CTAs that align with solution value proposition
+Create a visually stunning ${templateInfo?.name} with these creative requirements:
 
-Include 4-6 files (HTML, CSS, JavaScript as needed). Code should be:
-- Well-commented explaining key sections
-- Production-ready with proper error handling
-- Optimized for performance
-- Following modern best practices
-- Healthcare industry appropriate
+VISUAL EXCELLENCE:
+1. Use the brand colors (${journey.brand.colors.primary}, ${journey.brand.colors.secondary}, ${journey.brand.colors.accent}) throughout with creative CSS gradients, subtle glassmorphism effects, and layered depth
+2. ${selectedTemplate === 'landing' ? 'Craft a breathtaking hero section with a bold headline using CSS gradient text, an inspiring subheadline, and a prominent dual-CTA layout. Include a floating feature cards section with hover lift animations, a social proof section with animated counters, and a compelling bottom CTA band.' : selectedTemplate === 'webapp' ? 'Build an elegant dashboard with a collapsible sidebar, a sticky top navigation with avatar, a metrics overview with animated KPI cards, interactive data sections, and contextual action panels.' : 'Design a powerful analytics dashboard with a sidebar menu with icon labels, an overview grid of KPI cards with trend indicators, data tables with sorting indicators, a chart area placeholder with axis labels, and an activity feed panel.'}
+3. Typography hierarchy: Use bold large headings (48px+), medium subheadings, readable body text, and consistent caption styles
+4. Spacing rhythm: generous padding and whitespace to breathe and feel premium
+5. ${customizations.includeAccessibility ? 'Full WCAG 2.1 AA: semantic HTML5 landmark roles, aria-labels on all interactive elements, visible focus rings with offset, skip-navigation link, sufficient color contrast (4.5:1+), keyboard-navigable menus' : 'Semantic HTML5 structure with basic accessibility'}
+6. ${customizations.includeAnimations ? 'Rich micro-interactions: CSS keyframe animations for entrance effects (fade-in-up, slide-in), hover state transforms (scale, shadow, color), loading skeleton shimmer, smooth scroll behavior, and staggered animation delays for list items' : 'Clean static design with subtle hover transitions'}
+7. ${customizations.includeAuth ? 'Polished auth UI: modal-style login/signup with social login placeholders, password strength indicator, form field animations on focus, and a trust-building security badge' : 'Public-facing hero and feature presentation'}
+8. ${customizations.includeForms ? 'Beautiful form design: floating label inputs, real-time validation feedback with color-coded borders and icons, custom checkbox/radio styles, and an animated submit button' : 'Simple clean form elements'}
+9. ${customizations.includeCharts ? 'Rich data visualization area: styled chart containers with axis labels, legend, and sample SVG sparkline graphics or canvas placeholders styled to match brand colors' : 'Clean data summary cards with icon-metric-label layout'}
+10. ${customizations.includeResponsive ? 'Mobile-first responsive: CSS Grid and Flexbox layouts, responsive typography clamp(), hamburger menu for mobile with slide-in animation, and touch-friendly tap targets (min 44px)' : 'Desktop-optimized layout'}
+11. ${customizations.includeSEO ? 'Complete SEO: descriptive title tag, meta description, Open Graph tags, Twitter Card tags, canonical URL, JSON-LD structured data for HealthcareBusiness schema, and semantic heading hierarchy' : 'Basic meta tags'}
 
-Make the code immediately usable as an MVP foundation.`
+HEALTHCARE-SPECIFIC CREATIVITY:
+- Use medical/health iconography (SVG icons inline) for features: heart-pulse, shield-check, user-doctor, chart-line, calendar-check
+- Include trust signals: HIPAA badge, SSL indicator, privacy statement snippet
+- Patient-centric language that is warm and empowering, not clinical and cold
+- Color psychology: use the brand's primary color for action, secondary for supporting info, accent for success/health indicators
+- Include a subtle background pattern or medical cross motif using CSS
+
+CODE QUALITY STANDARDS:
+- Well-commented code explaining key sections and design decisions
+- CSS custom properties (variables) for all brand colors and spacing tokens
+- Modular CSS organization (reset, variables, typography, layout, components, utilities)
+- Progressive enhancement: core content works without JS
+- Include 4-6 files (index.html, styles.css, app.js, and additional as needed)
+- All content must directly reference the brand name "${journey.brand.name}" and the product's healthcare mission
+
+Make this code immediately deployable as a compelling MVP that would impress investors and patients alike.`
 
         const response = await window.spark.llm(prompt, 'gpt-4o', true)
         const result = JSON.parse(response)
@@ -1824,8 +1833,10 @@ Make sure the enhancement is production-ready and well-integrated.`
               <Sparkle className="w-12 h-12 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary" weight="fill" />
             </div>
             <div>
-              <h3 className="text-xl font-semibold mb-2">Generating Your Code...</h3>
-              <p className="text-muted-foreground">Building your {templates.find(t => t.type === selectedTemplate)?.name}</p>
+              <h3 className="text-xl font-semibold mb-2">Crafting Your Startup's Digital Presence...</h3>
+              <p className="text-muted-foreground">
+                Building a stunning {templates.find(t => t.type === selectedTemplate)?.name} for <strong>{journey.brand?.name || 'your brand'}</strong>
+              </p>
               {retryAttempt > 0 && (
                 <p className="text-sm text-orange-600 dark:text-orange-400 mt-2">
                   Retry attempt {retryAttempt}/{maxRetries}
@@ -1833,11 +1844,11 @@ Make sure the enhancement is production-ready and well-integrated.`
               )}
             </div>
             <div className="max-w-md mx-auto space-y-2 text-sm text-muted-foreground">
-              <p>✓ Analyzing PRD requirements</p>
-              <p>✓ Integrating brand personality</p>
-              <p>✓ Applying AI recommendations</p>
-              <p>✓ Structuring components</p>
-              <p className="animate-pulse">⏳ Writing production code...</p>
+              <p>✨ Interpreting your brand personality & colors</p>
+              <p>🏥 Infusing healthcare-specific design patterns</p>
+              <p>🎨 Crafting pixel-perfect UI components</p>
+              <p>⚡ Optimizing for performance & accessibility</p>
+              <p className="animate-pulse">🚀 Assembling production-ready code files...</p>
             </div>
           </CardContent>
         </Card>
@@ -2114,6 +2125,7 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
   const [error, setError] = useState<string | null>(null)
   const [founderEmail, setFounderEmail] = useState('')
   const [companyName, setCompanyName] = useState(journey.brand?.name || '')
+  const { t } = useLanguage()
 
   useEffect(() => {
     if (journey.githubRepo) {
@@ -2180,14 +2192,14 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="text-center space-y-2">
-        <h1 className="text-4xl font-bold font-heading">Deploy Your Startup</h1>
+        <h1 className="text-4xl font-bold font-heading">{t.github.title}</h1>
         <p className="text-lg text-muted-foreground">
-          {step === 'summary' ? 'Review your journey and choose deployment' : 
-           step === 'choose-deployment' ? 'Choose your deployment option' :
-           step === 'configure' ? 'Configure your repository settings' :
-           step === 'brainsait-configure' ? 'Join Brainsait Enterprise' :
-           step === 'creating' ? 'Creating your repository...' :
-           'Your code is live!'}
+          {step === 'summary' ? t.github.subtitle : 
+           step === 'choose-deployment' ? t.github.subtitleChoose :
+           step === 'configure' ? t.github.subtitleConfigure :
+           step === 'brainsait-configure' ? t.github.subtitleJoin :
+           step === 'creating' ? t.github.subtitleCreating :
+           t.github.subtitleSuccess}
         </p>
       </div>
 
@@ -2197,20 +2209,20 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Rocket weight="fill" className="text-primary" />
-                Your Journey Summary
+                {t.github.journeySummary}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               {journey.concept && (
                 <div className="space-y-2">
-                  <h3 className="font-semibold text-sm text-muted-foreground">Concept</h3>
+                  <h3 className="font-semibold text-sm text-muted-foreground">{t.github.concept}</h3>
                   <p className="text-sm">{journey.concept.problem}</p>
                 </div>
               )}
               
               {journey.brand && (
                 <div className="space-y-2">
-                  <h3 className="font-semibold text-sm text-muted-foreground">Brand</h3>
+                  <h3 className="font-semibold text-sm text-muted-foreground">{t.github.brand}</h3>
                   <div className="flex items-center gap-3">
                     <div className="text-2xl">{journey.brand.logo}</div>
                     <div>
@@ -2223,7 +2235,7 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
 
               {journey.code && (
                 <div className="space-y-2">
-                  <h3 className="font-semibold text-sm text-muted-foreground">Generated Code</h3>
+                  <h3 className="font-semibold text-sm text-muted-foreground">{t.github.generatedCode}</h3>
                   <div className="flex flex-wrap gap-2">
                     {journey.code.files.map((file, idx) => (
                       <Badge key={idx} variant="secondary">
@@ -2237,9 +2249,9 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
               <div className="flex items-center gap-2 p-4 bg-primary/10 rounded-lg border border-primary/20">
                 <Sparkle weight="fill" className="text-primary" />
                 <div>
-                  <div className="font-semibold">Level {journey.gameState.level} Founder</div>
+                  <div className="font-semibold">{t.level} {journey.gameState.level} {t.founderLevel}</div>
                   <div className="text-sm text-muted-foreground">
-                    {journey.gameState.xp} XP earned • {journey.gameState.badges.filter(b => b.earned).length} badges unlocked
+                    {journey.gameState.xp} XP {t.github.journeyCompleteStats} • {journey.gameState.badges.filter(b => b.earned).length} {t.github.badges}
                   </div>
                 </div>
               </div>
@@ -2248,9 +2260,9 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle>Choose Your Deployment Option</CardTitle>
+              <CardTitle>{t.github.chooseDeployment}</CardTitle>
               <CardDescription>
-                Select where you'd like to deploy your generated code
+                {t.github.chooseDeploymentDesc}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -2267,14 +2279,14 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
                       <Rocket className="w-6 h-6" weight="fill" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-semibold text-lg mb-1">Personal GitHub Repository</h3>
+                      <h3 className="font-semibold text-lg mb-1">{t.github.personalGitHub}</h3>
                       <p className="text-sm text-muted-foreground mb-3">
-                        Create a repository under your personal GitHub account. Perfect for getting started quickly.
+                        {t.github.personalDesc}
                       </p>
                       <div className="flex flex-wrap gap-2 text-xs">
-                        <Badge variant="secondary">Free</Badge>
-                        <Badge variant="secondary">Immediate Setup</Badge>
-                        <Badge variant="secondary">Full Control</Badge>
+                        <Badge variant="secondary">{t.github.free}</Badge>
+                        <Badge variant="secondary">{t.github.immediateSetup}</Badge>
+                        <Badge variant="secondary">{t.github.fullControl}</Badge>
                       </div>
                     </div>
                   </div>
@@ -2288,7 +2300,7 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
                   className="w-full p-6 rounded-lg border-2 border-purple-500 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950 dark:to-blue-950 hover:border-purple-600 transition-all text-left relative overflow-hidden"
                 >
                   <div className="absolute top-0 right-0 bg-gradient-to-l from-yellow-400 to-orange-400 text-xs font-bold px-3 py-1 rounded-bl-lg text-gray-900">
-                    RECOMMENDED
+                    {t.github.recommended}
                   </div>
                   <div className="flex items-start gap-4 mt-2">
                     <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center flex-shrink-0">
@@ -2296,17 +2308,17 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
                     </div>
                     <div className="flex-1">
                       <h3 className="font-semibold text-lg mb-1 flex items-center gap-2">
-                        Brainsait Enterprise Partnership
-                        <Badge className="bg-yellow-400 text-gray-900 text-[10px] px-1.5 py-0">FREE</Badge>
+                        {t.github.brainsaitEnterprise}
+                        <Badge className="bg-yellow-400 text-gray-900 text-[10px] px-1.5 py-0">{t.github.free}</Badge>
                       </h3>
                       <p className="text-sm text-muted-foreground mb-3">
-                        Deploy to our enterprise GitHub organization with free hosting, HIPAA compliance, mentorship, and $15,000 in value for 6 months.
+                        {t.github.brainsaitDesc}
                       </p>
                       <div className="flex flex-wrap gap-2 text-xs">
-                        <Badge className="bg-purple-600 text-white">Enterprise GitHub</Badge>
-                        <Badge className="bg-blue-600 text-white">Free Hosting</Badge>
-                        <Badge className="bg-green-600 text-white">Mentorship</Badge>
-                        <Badge className="bg-orange-600 text-white">$15K Value</Badge>
+                        <Badge className="bg-purple-600 text-white">{t.github.enterpriseGitHub}</Badge>
+                        <Badge className="bg-blue-600 text-white">{t.github.freeHosting}</Badge>
+                        <Badge className="bg-green-600 text-white">{t.github.mentorship}</Badge>
+                        <Badge className="bg-orange-600 text-white">{t.github.valueAmount}</Badge>
                       </div>
                     </div>
                   </div>
@@ -2323,39 +2335,39 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
           
           <Card>
             <CardHeader>
-              <CardTitle>Join Brainsait Enterprise</CardTitle>
+              <CardTitle>{t.github.joinBrainsait}</CardTitle>
               <CardDescription>
-                Submit your application to access enterprise features
+                {t.github.submitApplication}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <label htmlFor="founder-email" className="text-sm font-semibold">
-                  Your Email Address
+                  {t.github.yourEmail}
                 </label>
                 <input
                   id="founder-email"
                   type="email"
                   value={founderEmail}
                   onChange={(e) => setFounderEmail(e.target.value)}
-                  placeholder="founder@example.com"
+                  placeholder={t.github.emailPlaceholder}
                   className="w-full px-4 py-2 rounded-lg border border-input bg-background"
                 />
                 <p className="text-xs text-muted-foreground">
-                  We'll send enterprise access details and onboarding information here
+                  {t.github.emailDesc}
                 </p>
               </div>
 
               <div className="space-y-2">
                 <label htmlFor="company-name" className="text-sm font-semibold">
-                  Company/Project Name
+                  {t.github.companyName}
                 </label>
                 <input
                   id="company-name"
                   type="text"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
-                  placeholder="Your Healthcare Startup"
+                  placeholder={t.github.companyPlaceholder}
                   className="w-full px-4 py-2 rounded-lg border border-input bg-background"
                 />
               </div>
@@ -2364,13 +2376,13 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
                 <div className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" weight="bold" />
                   <div className="flex-1 text-sm">
-                    <p className="font-semibold mb-2 text-green-900 dark:text-green-100">What Happens Next?</p>
+                    <p className="font-semibold mb-2 text-green-900 dark:text-green-100">{t.github.whatHappensNext}</p>
                     <ol className="text-green-700 dark:text-green-300 text-xs space-y-1.5 ml-4 list-decimal">
-                      <li>We'll create your repository in the Brainsait Enterprise organization</li>
-                      <li>You'll receive an email invite to join the organization within 24 hours</li>
-                      <li>Your code will be automatically deployed with free hosting</li>
-                      <li>Our team will reach out to schedule your first mentorship session</li>
-                      <li>You'll get access to $500/month in AI credits starting immediately</li>
+                      <li>{t.github.nextStep1}</li>
+                      <li>{t.github.nextStep2}</li>
+                      <li>{t.github.nextStep3}</li>
+                      <li>{t.github.nextStep4}</li>
+                      <li>{t.github.nextStep5}</li>
                     </ol>
                   </div>
                 </div>
@@ -2378,7 +2390,7 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
             </CardContent>
             <CardFooter className="flex gap-3">
               <Button variant="outline" onClick={() => setStep('summary')}>
-                Back
+                {t.back}
               </Button>
               <Button 
                 onClick={async () => {
@@ -2389,7 +2401,7 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
                   
                   setIsCreating(true)
                   try {
-                    toast.success('Application submitted! Check your email for next steps.')
+                    toast.success(t.github.applicationSubmitted)
                     setTimeout(() => {
                       setStep('success')
                       if (onComplete) {
@@ -2408,11 +2420,11 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
                 size="lg"
               >
                 {isCreating ? (
-                  <>Submitting Application...</>
+                  <>{t.github.submittingApplication}</>
                 ) : (
                   <>
                     <Sparkle className="mr-2" weight="fill" />
-                    Apply for Brainsait Enterprise
+                    {t.github.applyForBrainsait}
                   </>
                 )}
               </Button>
@@ -2424,36 +2436,36 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
       {step === 'configure' && (
         <Card>
           <CardHeader>
-            <CardTitle>Configure Repository</CardTitle>
-            <CardDescription>Set up your GitHub repository details</CardDescription>
+            <CardTitle>{t.github.configureRepository}</CardTitle>
+            <CardDescription>{t.github.configureRepoDesc}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {error && (
               <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-sm">
-                <p className="font-semibold text-destructive mb-1">Error</p>
+                <p className="font-semibold text-destructive mb-1">{t.error}</p>
                 <p className="text-muted-foreground">{error}</p>
               </div>
             )}
 
             <div className="space-y-2">
               <label htmlFor="repo-name" className="text-sm font-semibold">
-                Repository Name
+                {t.github.repositoryName}
               </label>
               <input
                 id="repo-name"
                 type="text"
                 value={repoName}
                 onChange={(e) => setRepoName(e.target.value)}
-                placeholder="my-healthcare-startup"
+                placeholder={t.github.repoNamePlaceholder}
                 className="w-full px-4 py-2 rounded-lg border border-input bg-background"
               />
               <p className="text-xs text-muted-foreground">
-                Only lowercase letters, numbers, and hyphens allowed
+                {t.github.repoNameDesc}
               </p>
             </div>
 
             <div className="space-y-4">
-              <h3 className="font-semibold text-sm">Repository Visibility</h3>
+              <h3 className="font-semibold text-sm">{t.github.repositoryVisibility}</h3>
               <div className="space-y-3">
                 <label className="flex items-start gap-3 p-4 rounded-lg border-2 border-border hover:border-primary/50 cursor-pointer">
                   <input
@@ -2463,9 +2475,9 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
                     className="mt-0.5"
                   />
                   <div>
-                    <div className="font-medium">Public</div>
+                    <div className="font-medium">{t.github.public}</div>
                     <div className="text-xs text-muted-foreground">
-                      Anyone can see this repository. Great for open source projects.
+                      {t.github.publicDesc}
                     </div>
                   </div>
                 </label>
@@ -2478,9 +2490,9 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
                     className="mt-0.5"
                   />
                   <div>
-                    <div className="font-medium">Private</div>
+                    <div className="font-medium">{t.github.private}</div>
                     <div className="text-xs text-muted-foreground">
-                      Only you can see this repository. Keep your code confidential.
+                      {t.github.privateDesc}
                     </div>
                   </div>
                 </label>
@@ -2491,9 +2503,9 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
               <div className="flex items-start gap-3">
                 <div className="text-2xl">ℹ️</div>
                 <div className="flex-1 text-sm">
-                  <p className="font-semibold mb-1 text-blue-900 dark:text-blue-100">Authentication Required</p>
+                  <p className="font-semibold mb-1 text-blue-900 dark:text-blue-100">{t.github.authenticationRequired}</p>
                   <p className="text-blue-700 dark:text-blue-300 text-xs">
-                    You must be signed in with GitHub and have the necessary permissions to create repositories.
+                    {t.github.authRequiredDesc}
                   </p>
                 </div>
               </div>
@@ -2501,7 +2513,7 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
           </CardContent>
           <CardFooter className="flex gap-3">
             <Button variant="outline" onClick={() => setStep('summary')}>
-              Back
+              {t.back}
             </Button>
             <Button 
               onClick={handleCreateRepo} 
@@ -2510,11 +2522,11 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
               size="lg"
             >
               {isCreating ? (
-                <>Creating Repository...</>
+                <>{t.github.creatingRepository}</>
               ) : (
                 <>
                   <Rocket className="mr-2" weight="fill" />
-                  Create Repository
+                  {t.github.createRepository}
                 </>
               )}
             </Button>
@@ -2531,14 +2543,14 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
               <Rocket className="w-12 h-12 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary" weight="fill" />
             </div>
             <div>
-              <h3 className="text-xl font-semibold mb-2">Creating Your GitHub Repository...</h3>
-              <p className="text-muted-foreground">This may take a moment</p>
+              <h3 className="text-xl font-semibold mb-2">{t.github.creatingRepoProgress}</h3>
+              <p className="text-muted-foreground">{t.github.creatingRepoWait}</p>
             </div>
             <div className="max-w-md mx-auto space-y-2 text-sm text-muted-foreground">
-              <p>✓ Creating repository on GitHub</p>
-              <p>✓ Uploading code files</p>
-              <p>✓ Generating README documentation</p>
-              <p className="animate-pulse">⏳ Finalizing commit...</p>
+              <p>✓ {t.github.creatingRepoStep1}</p>
+              <p>✓ {t.github.creatingRepoStep2}</p>
+              <p>✓ {t.github.creatingRepoStep3}</p>
+              <p className="animate-pulse">⏳ {t.github.creatingRepoStep4}</p>
             </div>
           </CardContent>
         </Card>
@@ -2551,8 +2563,8 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
               <div className="text-center space-y-4">
                 <div className="text-6xl">🎉</div>
                 <div>
-                  <h3 className="text-2xl font-bold mb-2">Repository Created Successfully!</h3>
-                  <p className="text-muted-foreground">Your healthcare startup is now live on GitHub</p>
+                  <h3 className="text-2xl font-bold mb-2">{t.github.repoCreatedSuccess}</h3>
+                  <p className="text-muted-foreground">{t.github.startupLiveOnGitHub}</p>
                 </div>
               </div>
             </CardContent>
@@ -2560,8 +2572,8 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle>Your GitHub Repository</CardTitle>
-              <CardDescription>Access your code anytime on GitHub</CardDescription>
+              <CardTitle>{t.github.yourGitHubRepo}</CardTitle>
+              <CardDescription>{t.github.accessCodeAnytime}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="p-6 rounded-lg border-2 border-primary/20 bg-primary/5">
@@ -2589,7 +2601,7 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
               </div>
 
               <div className="space-y-3">
-                <h3 className="font-semibold text-sm">Next Steps</h3>
+                <h3 className="font-semibold text-sm">{t.github.nextStepsGitHub}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <a
                     href={journey.githubRepo.url}
@@ -2597,9 +2609,9 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
                     rel="noopener noreferrer"
                     className="p-4 rounded-lg border-2 border-border hover:border-primary/50 transition-all"
                   >
-                    <div className="font-medium mb-1">View on GitHub</div>
+                    <div className="font-medium mb-1">{t.github.viewOnGitHub}</div>
                     <div className="text-xs text-muted-foreground">
-                      See your repository and all files
+                      {t.github.viewOnGitHubDesc}
                     </div>
                   </a>
 
@@ -2607,9 +2619,9 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
                     href={`${journey.githubRepo.url}/archive/refs/heads/main.zip`}
                     className="p-4 rounded-lg border-2 border-border hover:border-primary/50 transition-all"
                   >
-                    <div className="font-medium mb-1">Download Code</div>
+                    <div className="font-medium mb-1">{t.github.downloadCode}</div>
                     <div className="text-xs text-muted-foreground">
-                      Get a local copy as ZIP file
+                      {t.github.downloadCodeDesc}
                     </div>
                   </a>
 
@@ -2619,14 +2631,14 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
                     rel="noopener noreferrer"
                     className="p-4 rounded-lg border-2 border-border hover:border-primary/50 transition-all"
                   >
-                    <div className="font-medium mb-1">Repository Settings</div>
+                    <div className="font-medium mb-1">{t.github.repoSettings}</div>
                     <div className="text-xs text-muted-foreground">
-                      Configure GitHub Pages, collaborators
+                      {t.github.repoSettingsDesc}
                     </div>
                   </a>
 
                   <div className="p-4 rounded-lg border-2 border-border hover:border-primary/50 transition-all cursor-pointer">
-                    <div className="font-medium mb-1">Clone Locally</div>
+                    <div className="font-medium mb-1">{t.github.cloneLocally}</div>
                     <div className="text-xs text-muted-foreground">
                       git clone {journey.githubRepo.url}.git
                     </div>
@@ -2638,9 +2650,9 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
                 <div className="flex items-start gap-3">
                   <div className="text-2xl">💡</div>
                   <div className="flex-1 text-sm">
-                    <p className="font-semibold mb-1 text-orange-900 dark:text-orange-100">Remember</p>
+                    <p className="font-semibold mb-1 text-orange-900 dark:text-orange-100">{t.github.remember}</p>
                     <p className="text-orange-700 dark:text-orange-300 text-xs">
-                      This is an MVP scaffold. Before going to production, add proper authentication, implement HIPAA compliance if needed, conduct security audits, and consult with legal/regulatory experts.
+                      {t.github.rememberDesc}
                     </p>
                   </div>
                 </div>
@@ -2649,9 +2661,9 @@ export function GitHubPhase({ journey, onComplete }: CompletionPhaseProps) {
               <div className="flex items-center gap-2 p-4 bg-primary/10 rounded-lg">
                 <Sparkle weight="fill" className="text-primary" />
                 <div>
-                  <div className="font-semibold">🏆 Journey Complete!</div>
+                  <div className="font-semibold">🏆 {t.github.journeyComplete}</div>
                   <div className="text-sm text-muted-foreground">
-                    Level {journey.gameState.level} Founder • {journey.gameState.xp} XP • {journey.gameState.badges.filter(b => b.earned).length} badges earned
+                    {t.level} {journey.gameState.level} {t.founderLevel} • {journey.gameState.xp} XP {t.github.journeyCompleteStats} • {journey.gameState.badges.filter(b => b.earned).length} {t.github.badges}
                   </div>
                 </div>
               </div>
