@@ -1,1 +1,1 @@
-export { GitHubPhase } from './OtherPhases'
+export { GitHubPhase } from './GitHubPhase.new'
