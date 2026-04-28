@@ -164,6 +164,14 @@ export const translations = {
       completeAtLeast40: 'Complete at least 40% to proceed',
       completePRDPhase: 'Complete PRD Phase',
       pdfExported: 'PDF exported successfully!',
+      pdfExportFailed: 'Failed to export PDF. Please try again.',
+      sectionProblem: 'Problem Statement',
+      sectionSolution: 'Proposed Solution',
+      sectionTargetUsers: 'Target Users',
+      sectionFeatures: 'Core Features',
+      sectionMetrics: 'Success Metrics',
+      sectionRegulatory: 'Regulatory & Compliance',
+      complete: 'Complete',
     },
 
     // Code Phase
@@ -670,6 +678,14 @@ export const translations = {
       completeAtLeast40: 'أكمل 40% على الأقل للمتابعة',
       completePRDPhase: 'إكمال مرحلة وثيقة المتطلبات',
       pdfExported: 'تم تصدير PDF بنجاح!',
+      pdfExportFailed: 'فشل تصدير PDF. يرجى المحاولة مجدداً.',
+      sectionProblem: 'بيان المشكلة',
+      sectionSolution: 'الحل المقترح',
+      sectionTargetUsers: 'المستخدمون المستهدفون',
+      sectionFeatures: 'الميزات الأساسية',
+      sectionMetrics: 'مقاييس النجاح',
+      sectionRegulatory: 'التنظيم والامتثال',
+      complete: 'مكتمل',
     },
 
     // Code Phase

@@ -10,6 +10,55 @@ interface ExportOptions {
     secondary: string
     accent: string
   }
+  language?: 'en' | 'ar'
+  isRTL?: boolean
+}
+
+const isArabicText = (text: string): boolean => {
+  const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/
+  return arabicRegex.test(text)
+}
+
+const reverseArabicText = (text: string): string => {
+  const lines = text.split('\n')
+  return lines.map(line => {
+    if (!isArabicText(line)) return line
+    
+    const words = line.split(' ')
+    const reversedWords = words.reverse()
+    
+    return reversedWords.map(word => {
+      if (isArabicText(word)) {
+        return word.split('').reverse().join('')
+      }
+      return word
+    }).join(' ')
+  }).join('\n')
+}
+
+const prepareArabicForPDF = (text: string, isRTL: boolean): string => {
+  if (!isRTL && !isArabicText(text)) {
+    return text
+  }
+  
+  const arabicChars: Record<string, string> = {
+    'ا': '\u0627', 'أ': '\u0623', 'إ': '\u0625', 'آ': '\u0622',
+    'ب': '\u0628', 'ت': '\u062A', 'ث': '\u062B', 'ج': '\u062C',
+    'ح': '\u062D', 'خ': '\u062E', 'د': '\u062F', 'ذ': '\u0630',
+    'ر': '\u0631', 'ز': '\u0632', 'س': '\u0633', 'ش': '\u0634',
+    'ص': '\u0635', 'ض': '\u0636', 'ط': '\u0637', 'ظ': '\u0638',
+    'ع': '\u0639', 'غ': '\u063A', 'ف': '\u0641', 'ق': '\u0642',
+    'ك': '\u0643', 'ل': '\u0644', 'م': '\u0645', 'ن': '\u0646',
+    'ه': '\u0647', 'و': '\u0648', 'ي': '\u064A', 'ى': '\u0649',
+    'ة': '\u0629', 'ئ': '\u0626', 'ء': '\u0621', 'ؤ': '\u0624'
+  }
+  
+  let normalized = text
+  for (const [char, code] of Object.entries(arabicChars)) {
+    normalized = normalized.replace(new RegExp(char, 'g'), code)
+  }
+  
+  return normalized
 }
 
 const parseOklch = (oklchStr: string): { l: number; c: number; h: number } => {
@@ -116,6 +165,9 @@ const getPersonalityStyles = (personality?: BrandPersonality) => {
 }
 
 export const exportPRDToPDF = (prd: PRD, options: ExportOptions = {}) => {
+  const isRTL = options.isRTL || options.language === 'ar'
+  const language = options.language || 'en'
+  
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -146,7 +198,20 @@ export const exportPRDToPDF = (prd: PRD, options: ExportOptions = {}) => {
   }
 
   const wrapText = (text: string, maxWidth: number): string[] => {
-    return doc.splitTextToSize(text, maxWidth) as string[]
+    const preparedText = isRTL ? prepareArabicForPDF(text, isRTL) : text
+    return doc.splitTextToSize(preparedText, maxWidth) as string[]
+  }
+
+  const addText = (text: string, x: number, y: number, options?: { align?: 'left' | 'center' | 'right' }) => {
+    const preparedText = isRTL ? prepareArabicForPDF(text, isRTL) : text
+    const xPosition = isRTL && options?.align !== 'center' ? pageWidth - x : x
+    const alignment = isRTL ? (options?.align === 'left' ? 'right' : options?.align === 'right' ? 'left' : options?.align) : options?.align
+    
+    if (alignment) {
+      doc.text(preparedText, xPosition, y, { align: alignment })
+    } else {
+      doc.text(preparedText, xPosition, y)
+    }
   }
 
   doc.setFillColor(primaryRgb[0], primaryRgb[1], primaryRgb[2])
@@ -163,13 +228,21 @@ export const exportPRDToPDF = (prd: PRD, options: ExportOptions = {}) => {
   doc.setFontSize(28)
   doc.setFont('helvetica', 'bold')
   
-  const title = options.brandName || 'Product Requirements Document'
-  doc.text(title, margin, 25)
+  const title = options.brandName || (language === 'ar' ? 'وثيقة متطلبات المنتج' : 'Product Requirements Document')
+  if (isRTL) {
+    addText(title, pageWidth - margin, 25, { align: 'right' })
+  } else {
+    addText(title, margin, 25)
+  }
 
   if (options.tagline) {
     doc.setFontSize(12)
     doc.setFont('helvetica', 'normal')
-    doc.text(options.tagline, margin, 35)
+    if (isRTL) {
+      addText(options.tagline, pageWidth - margin, 35, { align: 'right' })
+    } else {
+      addText(options.tagline, margin, 35)
+    }
   }
 
   yPosition = styles.useDecorators ? 60 : 50
@@ -183,12 +256,15 @@ export const exportPRDToPDF = (prd: PRD, options: ExportOptions = {}) => {
     doc.setTextColor(60, 60, 80)
     doc.setFontSize(10)
     doc.setFont('helvetica', 'bold')
-    doc.text('Brand Personality', margin + 5, yPosition + 7)
+    
+    const personalityLabel = language === 'ar' ? 'شخصية العلامة التجارية' : 'Brand Personality'
+    const xPos = isRTL ? pageWidth - margin - 5 : margin + 5
+    addText(personalityLabel, xPos, yPosition + 7)
     
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(9)
     const personalityText = `${options.personality.archetype} • ${options.personality.tone.join(', ')} • ${options.personality.values.join(', ')}`
-    doc.text(personalityText, margin + 5, yPosition + 14)
+    addText(personalityText, xPos, yPosition + 14)
     
     yPosition += 30
   }
@@ -196,6 +272,15 @@ export const exportPRDToPDF = (prd: PRD, options: ExportOptions = {}) => {
   doc.setTextColor(40, 40, 40)
 
   const sectionOrder = ['problem', 'solution', 'targetUsers', 'features', 'metrics', 'regulatory'] as const
+  
+  const sectionTitlesAr: Record<string, string> = {
+    problem: 'بيان المشكلة',
+    solution: 'الحل المقترح',
+    targetUsers: 'المستخدمون المستهدفون',
+    features: 'الميزات الأساسية',
+    metrics: 'مقاييس النجاح',
+    regulatory: 'التنظيم والامتثال'
+  }
   
   sectionOrder.forEach((sectionKey, index) => {
     const section = prd.sections[sectionKey]
@@ -209,14 +294,18 @@ export const exportPRDToPDF = (prd: PRD, options: ExportOptions = {}) => {
     }
 
     if (styles.useDecorators && styles.headerStyle === 'bold') {
+      const decoratorX = isRTL ? pageWidth - margin + 5 : margin - 5
       doc.setFillColor(primaryRgb[0], primaryRgb[1], primaryRgb[2])
-      doc.rect(margin - 5, yPosition - 2, 5, 10, 'F')
+      doc.rect(decoratorX, yPosition - 2, 5, 10, 'F')
     }
 
     doc.setFontSize(16)
     doc.setFont('helvetica', 'bold')
     doc.setTextColor(primaryRgb[0], primaryRgb[1], primaryRgb[2])
-    doc.text(section.title, margin, yPosition)
+    
+    const sectionTitle = language === 'ar' ? sectionTitlesAr[sectionKey] : section.title
+    const titleX = isRTL ? pageWidth - margin : margin
+    addText(sectionTitle, titleX, yPosition)
     yPosition += 10
 
     doc.setFontSize(10)
@@ -231,13 +320,17 @@ export const exportPRDToPDF = (prd: PRD, options: ExportOptions = {}) => {
         return
       }
 
+      const textX = isRTL ? pageWidth - margin : margin
+      const bulletX = isRTL ? pageWidth - margin - 2 : margin + 2
+      const indentX = isRTL ? pageWidth - margin - 5 : margin + 5
+
       if (line.startsWith('# ')) {
         addNewPageIfNeeded(15)
         doc.setFontSize(14)
         doc.setFont('helvetica', 'bold')
         doc.setTextColor(primaryRgb[0], primaryRgb[1], primaryRgb[2])
         const heading = line.replace('# ', '')
-        doc.text(heading, margin, yPosition)
+        addText(heading, textX, yPosition)
         yPosition += 8
         doc.setFontSize(10)
         doc.setFont('helvetica', 'normal')
@@ -247,7 +340,7 @@ export const exportPRDToPDF = (prd: PRD, options: ExportOptions = {}) => {
         doc.setFontSize(12)
         doc.setFont('helvetica', 'bold')
         const subheading = line.replace('## ', '')
-        doc.text(subheading, margin, yPosition)
+        addText(subheading, textX, yPosition)
         yPosition += 7
         doc.setFontSize(10)
         doc.setFont('helvetica', 'normal')
@@ -256,7 +349,7 @@ export const exportPRDToPDF = (prd: PRD, options: ExportOptions = {}) => {
         doc.setFontSize(11)
         doc.setFont('helvetica', 'bold')
         const subsubheading = line.replace('### ', '')
-        doc.text(subsubheading, margin, yPosition)
+        addText(subsubheading, textX, yPosition)
         yPosition += 6
         doc.setFontSize(10)
         doc.setFont('helvetica', 'normal')
@@ -266,10 +359,10 @@ export const exportPRDToPDF = (prd: PRD, options: ExportOptions = {}) => {
         const wrappedLines = wrapText(bulletText, contentWidth - 8)
         
         doc.setFillColor(accentRgb[0], accentRgb[1], accentRgb[2])
-        doc.circle(margin + 2, yPosition - 1.5, 1, 'F')
+        doc.circle(bulletX, yPosition - 1.5, 1, 'F')
         
         wrappedLines.forEach((wrappedLine: string, i: number) => {
-          doc.text(wrappedLine, margin + 5, yPosition)
+          addText(wrappedLine, indentX, yPosition)
           if (i < wrappedLines.length - 1) {
             yPosition += 5
             addNewPageIfNeeded(5)
@@ -286,12 +379,13 @@ export const exportPRDToPDF = (prd: PRD, options: ExportOptions = {}) => {
           
           doc.setTextColor(primaryRgb[0], primaryRgb[1], primaryRgb[2])
           doc.setFont('helvetica', 'bold')
-          doc.text(`${number}.`, margin, yPosition)
+          addText(`${number}.`, textX, yPosition)
           doc.setFont('helvetica', 'normal')
           doc.setTextColor(40, 40, 40)
           
+          const numberIndentX = isRTL ? pageWidth - margin - 7 : margin + 7
           wrappedLines.forEach((wrappedLine: string, i: number) => {
-            doc.text(wrappedLine, margin + 7, yPosition)
+            addText(wrappedLine, numberIndentX, yPosition)
             if (i < wrappedLines.length - 1) {
               yPosition += 5
               addNewPageIfNeeded(5)
@@ -303,7 +397,7 @@ export const exportPRDToPDF = (prd: PRD, options: ExportOptions = {}) => {
         addNewPageIfNeeded(6)
         const boldText = line.replace(/\*\*(.+?)\*\*/g, '$1')
         doc.setFont('helvetica', 'bold')
-        doc.text(boldText, margin, yPosition)
+        addText(boldText, textX, yPosition)
         doc.setFont('helvetica', 'normal')
         yPosition += 5
       } else if (line.match(/^[-\[\]x\s]+/)) {
@@ -311,21 +405,23 @@ export const exportPRDToPDF = (prd: PRD, options: ExportOptions = {}) => {
         const isChecked = line.includes('[x]') || line.includes('[X]')
         const checkboxText = line.replace(/^[-\[\]x\sX]+/, '').trim()
         
+        const checkboxX = isRTL ? pageWidth - margin - 3 : margin
         doc.setDrawColor(100, 100, 100)
         doc.setLineWidth(0.3)
-        doc.rect(margin, yPosition - 3, 3, 3, 'S')
+        doc.rect(checkboxX, yPosition - 3, 3, 3, 'S')
         
         if (isChecked) {
           doc.setTextColor(primaryRgb[0], primaryRgb[1], primaryRgb[2])
           doc.setFont('helvetica', 'bold')
-          doc.text('✓', margin + 0.5, yPosition - 0.5)
+          addText('✓', checkboxX + 0.5, yPosition - 0.5)
           doc.setFont('helvetica', 'normal')
           doc.setTextColor(40, 40, 40)
         }
         
+        const checkboxIndentX = isRTL ? pageWidth - margin - 8 : margin + 5
         const wrappedLines = wrapText(checkboxText, contentWidth - 8)
         wrappedLines.forEach((wrappedLine: string) => {
-          doc.text(wrappedLine, margin + 5, yPosition)
+          addText(wrappedLine, checkboxIndentX, yPosition)
           yPosition += 5
           addNewPageIfNeeded(5)
         })
@@ -333,7 +429,7 @@ export const exportPRDToPDF = (prd: PRD, options: ExportOptions = {}) => {
         addNewPageIfNeeded(6)
         const wrappedLines = wrapText(line, contentWidth)
         wrappedLines.forEach((wrappedLine: string) => {
-          doc.text(wrappedLine, margin, yPosition)
+          addText(wrappedLine, textX, yPosition)
           yPosition += 5
           addNewPageIfNeeded(5)
         })
@@ -350,22 +446,28 @@ export const exportPRDToPDF = (prd: PRD, options: ExportOptions = {}) => {
     doc.setTextColor(150, 150, 150)
     doc.setFont('helvetica', 'normal')
     
+    const pageLabel = language === 'ar' ? 'صفحة' : 'Page'
+    const ofLabel = language === 'ar' ? 'من' : 'of'
+    const prdLabel = language === 'ar' ? 'وثيقة المتطلبات' : 'PRD'
+    
     const footerText = options.brandName 
-      ? `${options.brandName} PRD • Page ${i} of ${totalPages}`
-      : `PRD • Page ${i} of ${totalPages}`
+      ? `${options.brandName} ${prdLabel} • ${pageLabel} ${i} ${ofLabel} ${totalPages}`
+      : `${prdLabel} • ${pageLabel} ${i} ${ofLabel} ${totalPages}`
     
     doc.text(footerText, pageWidth / 2, pageHeight - 10, { align: 'center' })
     
     if (options.personality) {
-      const personalityFooter = `${options.personality.archetype} Brand`
-      doc.setFontSize(7)
-      doc.text(personalityFooter, pageWidth - margin, pageHeight - 10, { align: 'right' })
+      const personalityFooter = language === 'ar' 
+        ? `علامة ${options.personality.archetype}`
+        : `${options.personality.archetype} Brand`
+      const footerX = isRTL ? margin : pageWidth - margin
+      doc.text(personalityFooter, footerX, pageHeight - 10, { align: isRTL ? 'left' : 'right' })
     }
   }
 
   const fileName = options.brandName 
     ? `${options.brandName.replace(/\s+/g, '-')}-PRD.pdf`
-    : 'PRD.pdf'
+    : language === 'ar' ? 'وثيقة-المتطلبات.pdf' : 'PRD.pdf'
   
   doc.save(fileName)
 }

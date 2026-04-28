@@ -197,7 +197,7 @@ const REGULATORY_CHECKLIST = [
 ]
 
 export function PRDPhase({ journey, onComplete }: PRDPhaseProps) {
-  const { language, t } = useLanguage()
+  const { language, t, isRTL } = useLanguage()
   const [activeSection, setActiveSection] = useState<SectionKey>('problem')
   const [sections, setSections] = useState<Record<SectionKey, PRDSection>>({
     problem: { title: 'Problem Statement', content: '', completed: false },
@@ -372,7 +372,7 @@ export function PRDPhase({ journey, onComplete }: PRDPhaseProps) {
     
     handleContentChange(section, template)
     setShowTemplate(false)
-    toast.success('Personality-tailored template added!')
+    toast.success(t.prd.personalityTailoredTemplate)
   }
 
   const handleChecklistToggle = (id: string) => {
@@ -394,11 +394,13 @@ export function PRDPhase({ journey, onComplete }: PRDPhaseProps) {
         brandName: journey.brand?.name,
         tagline: journey.brand?.tagline,
         personality: journey.brand?.personality,
-        colors: journey.brand?.colors
+        colors: journey.brand?.colors,
+        language,
+        isRTL
       })
-      toast.success('PDF exported successfully!')
+      toast.success(language === 'ar' ? 'تم تصدير PDF بنجاح!' : 'PDF exported successfully!')
     } catch (error) {
-      toast.error('Failed to export PDF. Please try again.')
+      toast.error(language === 'ar' ? 'فشل تصدير PDF. يرجى المحاولة مجدداً.' : 'Failed to export PDF. Please try again.')
       console.error(error)
     }
   }
@@ -417,14 +419,14 @@ export function PRDPhase({ journey, onComplete }: PRDPhaseProps) {
       onComplete(completedJourney)
     }
     
-    toast.success('PRD phase complete! 🎉')
+    toast.success(language === 'ar' ? 'مرحلة وثيقة المتطلبات مكتملة! 🎉' : 'PRD phase complete! 🎉')
   }
 
   const getCompletenessLabel = () => {
-    if (completeness >= 80) return 'Investor Ready'
-    if (completeness >= 60) return 'Strong Draft'
-    if (completeness >= 40) return 'In Progress'
-    return 'Getting Started'
+    if (completeness >= 80) return t.prd.investorReady
+    if (completeness >= 60) return t.prd.strongDraft
+    if (completeness >= 40) return t.prd.inProgress
+    return t.prd.gettingStarted
   }
 
   const getCompletenessColor = () => {
@@ -437,9 +439,9 @@ export function PRDPhase({ journey, onComplete }: PRDPhaseProps) {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="text-center space-y-2">
-        <h1 className="text-4xl font-bold font-heading">PRD Workshop</h1>
+        <h1 className="text-4xl font-bold font-heading">{t.prd.title}</h1>
         <p className="text-lg text-muted-foreground">
-          Build your product requirements document section by section
+          {t.prd.subtitle}
         </p>
       </div>
 
@@ -452,15 +454,15 @@ export function PRDPhase({ journey, onComplete }: PRDPhaseProps) {
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-lg mb-2">
-                  Writing with {journey.brand.personality.archetype} Personality
+                  {t.prd.writingWithPersonality} {journey.brand.personality.archetype} {t.prd.personality}
                 </h3>
                 <p className="text-sm text-muted-foreground mb-3">
-                  AI-generated content will match your brand tone and values
+                  {t.prd.aiContentMatch}
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {journey.brand.personality.tone.map((t) => (
-                    <Badge key={t} variant="secondary" className="capitalize text-xs">
-                      {t}
+                  {journey.brand.personality.tone.map((tone) => (
+                    <Badge key={tone} variant="secondary" className="capitalize text-xs">
+                      {tone}
                     </Badge>
                   ))}
                   {journey.brand.personality.values.map((v) => (
@@ -479,7 +481,7 @@ export function PRDPhase({ journey, onComplete }: PRDPhaseProps) {
         <CardContent className="pt-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex-1">
-              <p className="text-sm font-medium text-muted-foreground mb-1">Document Completeness</p>
+              <p className="text-sm font-medium text-muted-foreground mb-1">{t.prd.documentCompleteness}</p>
               <div className="flex items-center gap-3">
                 <span className={`text-3xl font-bold ${getCompletenessColor()}`}>
                   {completeness}%
@@ -499,129 +501,139 @@ export function PRDPhase({ journey, onComplete }: PRDPhaseProps) {
                 className="gap-2"
               >
                 <FilePdf weight="fill" className="w-4 h-4" />
-                Export PDF
+                {t.prd.exportPDF}
               </Button>
             </div>
           </div>
           <Progress value={completeness} className="h-3" />
           <p className="text-xs text-muted-foreground mt-2">
-            {completeness >= 80 ? 'Your PRD is ready to share!' : 'Complete all sections for an investor-ready PRD'}
+            {completeness >= 80 ? t.prd.prdReady : t.prd.completeAllSections}
           </p>
         </CardContent>
       </Card>
 
       <Tabs value={activeSection} onValueChange={(value) => setActiveSection(value as SectionKey)}>
         <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 h-auto">
-          {(Object.keys(SECTION_CONFIG) as SectionKey[]).map((key) => (
-            <TabsTrigger key={key} value={key} className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              {sections[key].completed ? (
-                <CheckCircle weight="fill" className="w-4 h-4" />
-              ) : (
-                <Circle className="w-4 h-4" />
-              )}
-              <span className="hidden sm:inline">{SECTION_CONFIG[key].title}</span>
-              <span className="sm:hidden">{key.slice(0, 4)}</span>
-            </TabsTrigger>
-          ))}
+          {(Object.keys(SECTION_CONFIG) as SectionKey[]).map((key) => {
+            const sectionTitleKey = `section${key.charAt(0).toUpperCase() + key.slice(1)}` as keyof typeof t.prd
+            const sectionTitle = t.prd[sectionTitleKey] as string || SECTION_CONFIG[key].title
+            
+            return (
+              <TabsTrigger key={key} value={key} className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                {sections[key].completed ? (
+                  <CheckCircle weight="fill" className="w-4 h-4" />
+                ) : (
+                  <Circle className="w-4 h-4" />
+                )}
+                <span className="hidden sm:inline">{sectionTitle}</span>
+                <span className="sm:hidden">{key.slice(0, 4)}</span>
+              </TabsTrigger>
+            )
+          })}
         </TabsList>
 
-        {(Object.keys(SECTION_CONFIG) as SectionKey[]).map((sectionKey) => (
-          <TabsContent key={sectionKey} value={sectionKey} className="mt-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="flex items-center gap-2">
-                      {SECTION_CONFIG[sectionKey].title}
-                      {sections[sectionKey].completed && (
-                        <CheckCircle weight="fill" className="w-5 h-5 text-green-600" />
-                      )}
-                    </CardTitle>
-                    <CardDescription className="mt-2">
-                      {SECTION_CONFIG[sectionKey].description}
-                    </CardDescription>
-                  </div>
-                </div>
-                <div className="flex gap-2 mt-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleUseTemplate(sectionKey)}
-                    disabled={isGenerating}
-                  >
-                    Use Template
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleGenerateContent(sectionKey)}
-                    disabled={isGenerating}
-                  >
-                    <Sparkle className="mr-2" weight="fill" />
-                    {sections[sectionKey].content.trim() ? 'Regenerate with AI' : 'Generate with AI'}
-                  </Button>
-                </div>
-                <div className="mt-3 p-3 bg-muted/50 rounded-md">
-                  <p className="text-xs text-muted-foreground">
-                    💡 {SECTION_CONFIG[sectionKey].helpText}
-                  </p>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Textarea
-                  id={`prd-${sectionKey}`}
-                  value={sections[sectionKey].content}
-                  onChange={(e) => handleContentChange(sectionKey, e.target.value)}
-                  placeholder={SECTION_CONFIG[sectionKey].placeholder}
-                  className="min-h-[400px] font-mono text-sm"
-                  disabled={isGenerating}
-                />
-
-                {sectionKey === 'regulatory' && (
-                  <div className="mt-6 p-4 border rounded-lg space-y-4">
-                    <h3 className="font-semibold text-sm flex items-center gap-2">
-                      <CheckCircle weight="duotone" className="w-5 h-5 text-primary" />
-                      Regulatory Compliance Checklist
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {REGULATORY_CHECKLIST.map((item) => (
-                        <div key={item.id} className="flex items-start gap-3 p-2 rounded hover:bg-muted/50">
-                          <Checkbox
-                            id={item.id}
-                            checked={regulatoryChecklist[item.id] || false}
-                            onCheckedChange={() => handleChecklistToggle(item.id)}
-                          />
-                          <label
-                            htmlFor={item.id}
-                            className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                          >
-                            {item.label}
-                          </label>
-                        </div>
-                      ))}
+        {(Object.keys(SECTION_CONFIG) as SectionKey[]).map((sectionKey) => {
+          const sectionTitleKey = `section${sectionKey.charAt(0).toUpperCase() + sectionKey.slice(1)}` as keyof typeof t.prd
+          const sectionTitle = t.prd[sectionTitleKey] as string || SECTION_CONFIG[sectionKey].title
+          
+          return (
+            <TabsContent key={sectionKey} value={sectionKey} className="mt-6">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="flex items-center gap-2">
+                        {sectionTitle}
+                        {sections[sectionKey].completed && (
+                          <CheckCircle weight="fill" className="w-5 h-5 text-green-600" />
+                        )}
+                      </CardTitle>
+                      <CardDescription className="mt-2">
+                        {SECTION_CONFIG[sectionKey].description}
+                      </CardDescription>
                     </div>
                   </div>
-                )}
-
-                <div className="flex items-center justify-between pt-4 border-t">
-                  <div className="text-sm text-muted-foreground">
-                    {sections[sectionKey].content.trim().length} characters
-                    {sections[sectionKey].completed && (
-                      <span className="ml-2 text-green-600 font-medium">✓ Complete</span>
-                    )}
+                  <div className="flex gap-2 mt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleUseTemplate(sectionKey)}
+                      disabled={isGenerating}
+                    >
+                      {t.prd.useTemplate}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleGenerateContent(sectionKey)}
+                      disabled={isGenerating}
+                    >
+                      <Sparkle className="mr-2" weight="fill" />
+                      {sections[sectionKey].content.trim() ? t.prd.regenerateWithAI : t.prd.generateWithAI}
+                    </Button>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        ))}
+                  <div className="mt-3 p-3 bg-muted/50 rounded-md">
+                    <p className="text-xs text-muted-foreground">
+                      💡 {SECTION_CONFIG[sectionKey].helpText}
+                    </p>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Textarea
+                    id={`prd-${sectionKey}`}
+                    value={sections[sectionKey].content}
+                    onChange={(e) => handleContentChange(sectionKey, e.target.value)}
+                    placeholder={SECTION_CONFIG[sectionKey].placeholder}
+                    className="min-h-[400px] font-mono text-sm"
+                    disabled={isGenerating}
+                  />
+
+                  {sectionKey === 'regulatory' && (
+                    <div className="mt-6 p-4 border rounded-lg space-y-4">
+                      <h3 className="font-semibold text-sm flex items-center gap-2">
+                        <CheckCircle weight="duotone" className="w-5 h-5 text-primary" />
+                        {t.prd.regulatoryChecklist}
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {REGULATORY_CHECKLIST.map((item) => (
+                          <div key={item.id} className="flex items-start gap-3 p-2 rounded hover:bg-muted/50">
+                            <Checkbox
+                              id={item.id}
+                              checked={regulatoryChecklist[item.id] || false}
+                              onCheckedChange={() => handleChecklistToggle(item.id)}
+                            />
+                            <label
+                              htmlFor={item.id}
+                              className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                            >
+                              {item.label}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between pt-4 border-t">
+                    <div className="text-sm text-muted-foreground">
+                      {sections[sectionKey].content.trim().length} {t.prd.characters}
+                      {sections[sectionKey].completed && (
+                        <span className="ml-2 text-green-600 font-medium">✓ {t.prd.complete}</span>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )
+        })}
       </Tabs>
 
       <Card className="border-primary/50">
         <CardHeader>
-          <CardTitle>Ready to proceed?</CardTitle>
+          <CardTitle>{t.prd.readyToProceed}</CardTitle>
           <CardDescription>
-            Complete your PRD to unlock the Code Generation phase
+            {t.prd.completePRDDesc}
           </CardDescription>
         </CardHeader>
         <CardFooter>
@@ -632,10 +644,10 @@ export function PRDPhase({ journey, onComplete }: PRDPhaseProps) {
             size="lg"
           >
             {completeness < 40 ? (
-              <>Complete at least 40% to proceed</>
+              <>{t.prd.completeAtLeast40}</>
             ) : (
               <>
-                Complete PRD Phase
+                {t.prd.completePRDPhase}
                 <ArrowRight className="ml-2" weight="bold" />
               </>
             )}
