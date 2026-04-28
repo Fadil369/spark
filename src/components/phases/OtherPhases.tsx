@@ -1950,7 +1950,13 @@ Include only files that need to change. Make the enhancement production-ready an
             </CardContent>
           </Card>
 
-          <LiveCodePreview files={generatedCode.files} />
+          <LiveCodePreview 
+            files={generatedCode.files} 
+            onCodeUpdate={(updatedFiles) => {
+              setGeneratedCode((prev) => prev ? { ...prev, files: updatedFiles } : null)
+            }}
+            brandName={journey.brand?.name}
+          />
 
           <Card>
             <CardHeader>
