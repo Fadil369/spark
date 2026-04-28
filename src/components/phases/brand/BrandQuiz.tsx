@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress'
 import { Brain } from '@phosphor-icons/react'
 import { BrandPersonality } from '@/lib/types'
 import { toast } from 'sonner'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface BrandQuizProps {
   onComplete: (personality: BrandPersonality) => void
@@ -88,6 +89,8 @@ export function BrandQuiz({ onComplete, conceptData }: BrandQuizProps) {
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({})
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const { t } = useLanguage()
+  const bt = t.brand
 
   const handleQuizAnswer = (questionId: string, answer: string) => {
     setQuizAnswers((prev) => ({ ...prev, [questionId]: answer }))
@@ -123,10 +126,10 @@ Base your recommendations on the quiz responses and ensure they align with healt
       const response = await window.spark.llm(prompt, 'gpt-4o', true)
       const personality = JSON.parse(response)
       
-      toast.success('Brand personality analyzed!')
+      toast.success(bt.personalityAnalyzed)
       onComplete(personality)
     } catch (error) {
-      toast.error('Failed to analyze personality. Please try again.')
+      toast.error(bt.analyzeError)
       console.error(error)
     } finally {
       setIsAnalyzing(false)
@@ -143,14 +146,14 @@ Base your recommendations on the quiz responses and ensure they align with healt
             <Brain className="w-12 h-12 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary" weight="fill" />
           </div>
           <div>
-            <h3 className="text-xl font-semibold mb-2">Analyzing Your Brand Personality...</h3>
-            <p className="text-muted-foreground">Understanding your values, tone, and style preferences</p>
+            <h3 className="text-xl font-semibold mb-2">{bt.analyzingPersonality}</h3>
+            <p className="text-muted-foreground">{bt.understandingValues}</p>
           </div>
           <div className="max-w-md mx-auto space-y-2 text-sm text-muted-foreground">
-            <p>✓ Processing quiz responses</p>
-            <p>✓ Mapping to healthcare archetypes</p>
-            <p>✓ Identifying tone and values</p>
-            <p className="animate-pulse">⏳ Creating personality profile...</p>
+            <p>✓ {bt.processingResponses}</p>
+            <p>✓ {bt.mappingArchetypes}</p>
+            <p>✓ {bt.identifyingTone}</p>
+            <p className="animate-pulse">⏳ {bt.creatingProfile}</p>
           </div>
         </CardContent>
       </Card>
@@ -162,17 +165,17 @@ Base your recommendations on the quiz responses and ensure they align with healt
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Brain weight="fill" className="text-primary" />
-          Brand Personality Quiz
+          {bt.personalityQuiz}
         </CardTitle>
         <CardDescription>
-          Answer {quizQuestions.length} questions to discover your brand's unique personality
+          {bt.quizSubtitle}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
-            <span>Question {currentQuestion + 1} of {quizQuestions.length}</span>
-            <span>{Math.round(((currentQuestion + (quizAnswers[quizQuestions[currentQuestion].id] ? 1 : 0)) / quizQuestions.length) * 100)}% Complete</span>
+            <span>{bt.question} {currentQuestion + 1} {bt.of} {quizQuestions.length}</span>
+            <span>{Math.round(((currentQuestion + (quizAnswers[quizQuestions[currentQuestion].id] ? 1 : 0)) / quizQuestions.length) * 100)}% {bt.complete}</span>
           </div>
           <Progress value={(Object.keys(quizAnswers).length / quizQuestions.length) * 100} className="h-2" />
         </div>
@@ -214,7 +217,7 @@ Base your recommendations on the quiz responses and ensure they align with healt
             variant="outline"
             onClick={() => setCurrentQuestion((prev) => Math.max(0, prev - 1))}
           >
-            Previous
+            {bt.previous}
           </Button>
         )}
         {Object.keys(quizAnswers).length === quizQuestions.length && (
@@ -224,7 +227,7 @@ Base your recommendations on the quiz responses and ensure they align with healt
             className="flex-1"
           >
             <Brain className="mr-2" weight="fill" />
-            Analyze My Brand Personality
+            {bt.analyzePersonality}
           </Button>
         )}
       </CardFooter>

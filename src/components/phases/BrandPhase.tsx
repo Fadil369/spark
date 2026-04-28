@@ -32,7 +32,8 @@ export function BrandPhase({ journey, onComplete }: BrandPhaseProps) {
   const [selectedTagline, setSelectedTagline] = useState('')
   const [selectedIcon, setSelectedIcon] = useState('Heart')
   
-  const { language } = useLanguage()
+  const { language, t } = useLanguage()
+  const bt = t.brand
 
   useEffect(() => {
     if (journey.brand) {
@@ -116,7 +117,7 @@ export function BrandPhase({ journey, onComplete }: BrandPhaseProps) {
 
   const handleComplete = () => {
     if (!selectedName || !selectedTagline) {
-      toast.error('Please complete all brand elements')
+      toast.error(bt.completeAllElements)
       return
     }
 
@@ -136,14 +137,14 @@ export function BrandPhase({ journey, onComplete }: BrandPhaseProps) {
       onComplete(completedJourney)
     }
     
-    toast.success('Brand phase complete! 🎨')
+    toast.success(bt.phaseComplete)
   }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="text-center space-y-2">
-        <h1 className="text-4xl font-bold font-heading">The Brand Studio</h1>
-        <p className="text-lg text-muted-foreground">Create your startup's visual identity</p>
+        <h1 className="text-4xl font-bold font-heading">{bt.title}</h1>
+        <p className="text-lg text-muted-foreground">{bt.subtitle}</p>
       </div>
 
       {step === 'quiz' && (
@@ -165,17 +166,17 @@ export function BrandPhase({ journey, onComplete }: BrandPhaseProps) {
                 <Sparkle className="w-6 h-6 text-accent" weight="fill" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold mb-2">Your Brand Personality: {String(brandPersonality.archetype || '')}</h3>
+                <h3 className="font-semibold mb-2">{bt.yourBrandPersonality}: {String(brandPersonality.archetype || '')}</h3>
                 <p className="text-sm text-muted-foreground mb-3">{String(brandPersonality.targetFeeling || '')}</p>
                 <div className="flex flex-wrap gap-2">
-                  {Array.isArray(brandPersonality.tone) && brandPersonality.tone.map((t, idx) => (
-                    <Badge key={`${t}-${idx}`} variant="secondary" className="capitalize">
-                      {String(t)}
+                  {Array.isArray(brandPersonality.tone) && brandPersonality.tone.map((tone, idx) => (
+                    <Badge key={`${tone}-${idx}`} variant="secondary" className="capitalize">
+                      {String(tone)}
                     </Badge>
                   ))}
-                  {Array.isArray(brandPersonality.values) && brandPersonality.values.map((v, idx) => (
-                    <Badge key={`${v}-${idx}`} variant="outline" className="capitalize">
-                      {String(v)}
+                  {Array.isArray(brandPersonality.values) && brandPersonality.values.map((value, idx) => (
+                    <Badge key={`${value}-${idx}`} variant="outline" className="capitalize">
+                      {String(value)}
                     </Badge>
                   ))}
                 </div>
@@ -188,14 +189,14 @@ export function BrandPhase({ journey, onComplete }: BrandPhaseProps) {
       {step === 'names' && (
         <Card>
           <CardHeader>
-            <CardTitle>Choose Your Startup Name</CardTitle>
-            <CardDescription>Select a name that resonates with your vision</CardDescription>
+            <CardTitle>{bt.chooseName}</CardTitle>
+            <CardDescription>{bt.chooseNameDesc}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {isGenerating ? (
               <div className="text-center py-12">
                 <Sparkle className="w-12 h-12 mx-auto mb-4 animate-pulse text-primary" weight="fill" />
-                <p className="text-muted-foreground">Generating unique names...</p>
+                <p className="text-muted-foreground">{bt.generatingNames}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -218,10 +219,10 @@ export function BrandPhase({ journey, onComplete }: BrandPhaseProps) {
           <CardFooter className="flex gap-3">
             <Button variant="outline" onClick={generateNames} disabled={isGenerating}>
               <Sparkle className="mr-2" weight="fill" />
-              Regenerate Names
+              {bt.regenerateNames}
             </Button>
             <Button onClick={() => setStep('colors')} disabled={!selectedName} className="flex-1">
-              Continue to Colors
+              {bt.continueToColors}
               <ArrowRight className="ml-2" weight="bold" />
             </Button>
           </CardFooter>
@@ -242,14 +243,14 @@ export function BrandPhase({ journey, onComplete }: BrandPhaseProps) {
       {step === 'tagline' && (
         <Card>
           <CardHeader>
-            <CardTitle>Choose Your Tagline</CardTitle>
-            <CardDescription>A memorable phrase that captures your mission</CardDescription>
+            <CardTitle>{bt.chooseTagline}</CardTitle>
+            <CardDescription>{bt.taglineDesc}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {isGenerating ? (
               <div className="text-center py-12">
                 <Sparkle className="w-12 h-12 mx-auto mb-4 animate-pulse text-primary" weight="fill" />
-                <p className="text-muted-foreground">Generating taglines...</p>
+                <p className="text-muted-foreground">{bt.generatingTaglines}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -271,14 +272,14 @@ export function BrandPhase({ journey, onComplete }: BrandPhaseProps) {
           </CardContent>
           <CardFooter className="flex gap-3">
             <Button variant="outline" onClick={() => setStep('colors')}>
-              Back
+              {bt.back}
             </Button>
             <Button variant="outline" onClick={generateTaglines} disabled={isGenerating}>
               <Sparkle className="mr-2" weight="fill" />
-              Regenerate Taglines
+              {bt.regenerateTaglines}
             </Button>
             <Button onClick={() => setStep('review')} disabled={!selectedTagline} className="flex-1">
-              Review Brand
+              {bt.reviewBrand}
               <ArrowRight className="ml-2" weight="bold" />
             </Button>
           </CardFooter>

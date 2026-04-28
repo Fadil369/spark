@@ -1,6 +1,7 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ArrowRight } from '@phosphor-icons/react'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface BrandReviewProps {
   selectedName: string
@@ -37,11 +38,14 @@ export function BrandReview({
   onStartOver,
   onComplete
 }: BrandReviewProps) {
+  const { t } = useLanguage()
+  const bt = t.brand
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Your Brand Identity</CardTitle>
-        <CardDescription>Review your complete brand kit</CardDescription>
+        <CardTitle>{bt.yourBrandIdentity}</CardTitle>
+        <CardDescription>{bt.reviewBrandKit}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-8">
         <div className="text-center p-8 rounded-lg" style={{ backgroundColor: selectedColors.primary }}>
@@ -55,24 +59,24 @@ export function BrandReview({
         <div className="grid grid-cols-3 gap-4">
           <div className="text-center p-4 rounded-lg bg-muted/50">
             <div className="w-16 h-16 rounded-full mx-auto mb-2" style={{ backgroundColor: selectedColors.primary }} />
-            <div className="text-xs text-muted-foreground">Primary</div>
+            <div className="text-xs text-muted-foreground">{bt.primary}</div>
           </div>
           <div className="text-center p-4 rounded-lg bg-muted/50">
             <div className="w-16 h-16 rounded-full mx-auto mb-2" style={{ backgroundColor: selectedColors.secondary }} />
-            <div className="text-xs text-muted-foreground">Secondary</div>
+            <div className="text-xs text-muted-foreground">{bt.secondary}</div>
           </div>
           <div className="text-center p-4 rounded-lg bg-muted/50">
             <div className="w-16 h-16 rounded-full mx-auto mb-2" style={{ backgroundColor: selectedColors.accent }} />
-            <div className="text-xs text-muted-foreground">Accent</div>
+            <div className="text-xs text-muted-foreground">{bt.accent}</div>
           </div>
         </div>
       </CardContent>
       <CardFooter className="flex gap-3">
         <Button variant="outline" onClick={onStartOver}>
-          Start Over
+          {bt.startOver}
         </Button>
         <Button onClick={onComplete} className="flex-1">
-          Complete Brand Phase
+          {bt.completeBrand}
           <ArrowRight className="ml-2" weight="bold" />
         </Button>
       </CardFooter>

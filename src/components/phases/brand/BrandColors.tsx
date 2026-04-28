@@ -1,6 +1,7 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ArrowRight } from '@phosphor-icons/react'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface BrandColorsProps {
   selectedColors: {
@@ -72,11 +73,14 @@ export function BrandColors({
   onBack,
   onContinue
 }: BrandColorsProps) {
+  const { t } = useLanguage()
+  const bt = t.brand
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Choose Your Color Palette</CardTitle>
-        <CardDescription>Select colors that reflect your brand personality</CardDescription>
+        <CardTitle>{bt.chooseColors}</CardTitle>
+        <CardDescription>{bt.chooseColorsDesc}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-4">
@@ -104,9 +108,9 @@ export function BrandColors({
                   </div>
                 </div>
                 <div className="text-xs text-muted-foreground space-y-1">
-                  <div>Primary</div>
-                  <div>Secondary</div>
-                  <div>Accent</div>
+                  <div>{bt.primary}</div>
+                  <div>{bt.secondary}</div>
+                  <div>{bt.accent}</div>
                 </div>
               </div>
             </button>
@@ -114,7 +118,7 @@ export function BrandColors({
         </div>
 
         <div className="space-y-3">
-          <label className="text-sm font-semibold">Choose Your Icon</label>
+          <label className="text-sm font-semibold">{bt.chooseIcon}</label>
           <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
             {iconOptions.map((icon) => (
               <button
@@ -134,10 +138,10 @@ export function BrandColors({
       </CardContent>
       <CardFooter className="flex gap-3">
         <Button variant="outline" onClick={onBack}>
-          Back
+          {bt.back}
         </Button>
         <Button onClick={onContinue} className="flex-1">
-          Continue to Tagline
+          {bt.continueToTaglineArrow}
           <ArrowRight className="ml-2" weight="bold" />
         </Button>
       </CardFooter>
