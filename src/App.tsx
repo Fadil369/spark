@@ -10,9 +10,10 @@ import { StoryPhase, BrandPhase, CodePhase, GitHubPhase } from '@/components/pha
 import { PRDPhase } from '@/components/phases/PRDPhase'
 import { CelebrationDialog } from '@/components/CelebrationDialog'
 import { WelcomeScreen } from '@/components/WelcomeScreen'
+import { UsageMonitor } from '@/components/UsageMonitor'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
-import { Sun, Moon, Globe } from '@phosphor-icons/react'
+import { Sun, Moon, Globe, ChartLineUp } from '@phosphor-icons/react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { parseRoute, navigate, Route } from '@/lib/router'
 import { SparkLogo } from '@/components/SparkLogo'
@@ -156,6 +157,17 @@ function App() {
             <Button
               variant="ghost"
               size="sm"
+              onClick={() => navigate({ view: 'usage' })}
+              className="flex items-center gap-1.5 text-sm font-medium"
+              title={language === 'en' ? 'API Usage Monitor' : 'مراقب استخدام API'}
+            >
+              <ChartLineUp className="w-4 h-4" />
+              <span className="hidden sm:inline">{language === 'en' ? 'Usage' : 'الاستخدام'}</span>
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
               className="flex items-center gap-1.5 text-sm font-medium"
               title={language === 'en' ? 'Switch to Arabic' : 'التبديل إلى الإنجليزية'}
@@ -173,7 +185,7 @@ function App() {
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </Button>
 
-            {route.view === 'phase' && (
+            {(route.view === 'phase' || route.view === 'usage') && (
               <Button variant="outline" onClick={() => navigate({ view: 'dashboard' })}>
                 {t.backToDashboard}
               </Button>
@@ -207,6 +219,10 @@ function App() {
             </div>
           </main>
         </>
+      ) : route.view === 'usage' ? (
+        <main className="max-w-7xl mx-auto px-4 py-8">
+          <UsageMonitor />
+        </main>
       ) : (
         <>
           <PhaseNavigation journey={journey} onPhaseSelect={handlePhaseSelect} />

@@ -1,3 +1,5 @@
+import { RateLimiter, formatTimeRemaining } from './rateLimiter'
+
 const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY
 const DEEPSEEK_API_URL = import.meta.env.VITE_DEEPSEEK_API_URL || 'https://api.deepseek.com/v1/chat/completions'
 
@@ -34,10 +36,25 @@ async function callDeepSeek(
   prompt: string,
   temperature: number = 0.7,
   maxTokens: number = 2000,
-  jsonMode: boolean = false
+  jsonMode: boolean = false,
+  endpoint: string = 'default'
 ): Promise<string> {
+  const rateLimiter = new RateLimiter(endpoint)
+
   try {
     validateApiKey()
+    
+    const limitCheck = await rateLimiter.checkLimit()
+    if (!limitCheck.allowed) {
+      await rateLimiter.recordBlocked()
+      const timeRemaining = formatTimeRemaining(limitCheck.retryAfter || 0)
+      throw new Error(
+        `Rate limit exceeded for ${endpoint}. Please wait ${timeRemaining} before trying again. ` +
+        `(${limitCheck.remaining} requests remaining)`
+      )
+    }
+
+    await rateLimiter.recordRequest()
     
     const response = await fetch(DEEPSEEK_API_URL, {
       method: 'POST',
@@ -65,6 +82,7 @@ async function callDeepSeek(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
+      await rateLimiter.recordUsage(false)
       throw new Error(`DeepSeek API error: ${response.status} - ${JSON.stringify(errorData)}`)
     }
 
@@ -72,8 +90,15 @@ async function callDeepSeek(
     const content = data.choices[0]?.message?.content || ''
     
     if (!content) {
+      await rateLimiter.recordUsage(false)
       throw new Error('Empty response from DeepSeek API')
     }
+
+    await rateLimiter.recordUsage(true, {
+      prompt: data.usage.prompt_tokens,
+      completion: data.usage.completion_tokens,
+      total: data.usage.total_tokens
+    })
 
     return content
   } catch (error) {
@@ -140,7 +165,7 @@ Return a JSON object:
   "concepts": ["array of 8 healthcare concept phrases"]
 }`
 
-  const content = await callDeepSeek(prompt, 0.8, 1000, true)
+  const content = await callDeepSeek(prompt, 0.8, 1000, true, 'concepts')
   const cleaned = cleanJsonResponse(content)
   const result = JSON.parse(cleaned)
   
@@ -174,7 +199,7 @@ Return a JSON object:
   "solution": "..."
 }`
 
-  const content = await callDeepSeek(prompt, 0.7, 1500, true)
+  const content = await callDeepSeek(prompt, 0.7, 1500, true, 'refine')
   const cleaned = cleanJsonResponse(content)
   const result = JSON.parse(cleaned)
   
@@ -219,7 +244,7 @@ ${languageInstruction}
 
 Write a cohesive, inspiring 3-4 paragraph narrative that connects these elements authentically. Make it emotionally engaging and credible.`
 
-  return await callDeepSeek(prompt, 0.8, 2000, false)
+  return await callDeepSeek(prompt, 0.8, 2000, false, 'story')
 }
 
 export async function validateCodeWithDeepSeek(
@@ -251,7 +276,7 @@ Evaluate and return JSON:
 
 Focus on: HIPAA compliance, accessibility (WCAG 2.1 AA), performance, security (XSS, CSRF, injection), maintainability.`
 
-  const content = await callDeepSeek(prompt, 0.3, 2000, true)
+  const content = await callDeepSeek(prompt, 0.3, 2000, true, 'code-validate')
   const cleaned = cleanJsonResponse(content)
   const result = JSON.parse(cleaned)
   
@@ -296,7 +321,7 @@ Return JSON:
 
 Focus on: healthcare best practices, HIPAA, accessibility, performance, modern patterns, maintainability.`
 
-  const content = await callDeepSeek(prompt, 0.4, 4000, true)
+  const content = await callDeepSeek(prompt, 0.4, 4000, true, 'code-enhance')
   const cleaned = cleanJsonResponse(content)
   const result = JSON.parse(cleaned)
   
@@ -326,7 +351,7 @@ Provide 5-7 specific, actionable improvement suggestions. Return JSON:
 
 Focus on: healthcare data security, accessibility, performance, modern best practices, UX enhancements.`
 
-  const content = await callDeepSeek(prompt, 0.5, 1500, true)
+  const content = await callDeepSeek(prompt, 0.5, 1500, true, 'analysis')
   const cleaned = cleanJsonResponse(content)
   const result = JSON.parse(cleaned)
   
@@ -362,7 +387,7 @@ Generate 6 unique, professional, memorable healthcare brand names. Return JSON:
   "names": ["array of 6 brand names"]
 }`
 
-  const content = await callDeepSeek(prompt, 0.9, 1000, true)
+  const content = await callDeepSeek(prompt, 0.9, 1000, true, 'brand')
   const cleaned = cleanJsonResponse(content)
   const result = JSON.parse(cleaned)
   
@@ -387,7 +412,7 @@ Generate 5 compelling taglines. Each should be 3-7 words, memorable, healthcare-
   "taglines": ["array of 5 taglines"]
 }`
 
-  const content = await callDeepSeek(prompt, 0.8, 800, true)
+  const content = await callDeepSeek(prompt, 0.8, 800, true, 'tagline')
   const cleaned = cleanJsonResponse(content)
   const result = JSON.parse(cleaned)
   
@@ -424,7 +449,7 @@ ${languageInstruction}
 
 Write comprehensive, actionable content focused on healthcare specifics. Be detailed and practical.`
 
-  return await callDeepSeek(prompt, 0.7, 2000, false)
+  return await callDeepSeek(prompt, 0.7, 2000, false, 'prd')
 }
 
 export async function analyzeStoryQuality(story: string): Promise<{
@@ -450,7 +475,7 @@ Return JSON:
 
 Be critical but fair. Most good stories score 65-85.`
 
-  const content = await callDeepSeek(prompt, 0.3, 500, true)
+  const content = await callDeepSeek(prompt, 0.3, 500, true, 'analysis')
   const cleaned = cleanJsonResponse(content)
   const result = JSON.parse(cleaned)
   

@@ -4,6 +4,7 @@ export type Route =
   | { view: 'welcome' }
   | { view: 'dashboard' }
   | { view: 'phase'; phase: PhaseKey }
+  | { view: 'usage' }
 
 export function parseRoute(hash: string): Route {
   if (!hash || hash === '#/') {
@@ -12,6 +13,10 @@ export function parseRoute(hash: string): Route {
 
   if (hash === '#/welcome') {
     return { view: 'welcome' }
+  }
+
+  if (hash === '#/usage') {
+    return { view: 'usage' }
   }
 
   if (hash.startsWith('#/phase/')) {
@@ -28,6 +33,9 @@ export function parseRoute(hash: string): Route {
 export function routeToHash(route: Route): string {
   if (route.view === 'welcome') {
     return '#/welcome'
+  }
+  if (route.view === 'usage') {
+    return '#/usage'
   }
   if (route.view === 'phase') {
     return `#/phase/${route.phase}`
