@@ -174,9 +174,9 @@ export function BrandPhase({ journey, onComplete }: BrandPhaseProps) {
                       {String(tone)}
                     </Badge>
                   ))}
-                  {Array.isArray(brandPersonality.values) && brandPersonality.values.map((v, idx) => (
-                    <Badge key={`${v}-${idx}`} variant="outline" className="capitalize">
-                      {String(v)}
+                  {Array.isArray(brandPersonality.values) && brandPersonality.values.map((value, idx) => (
+                    <Badge key={`${value}-${idx}`} variant="outline" className="capitalize">
+                      {String(value)}
                     </Badge>
                   ))}
                 </div>
