@@ -14,6 +14,7 @@ import { PRDPhase } from '@/components/phases/PRDPhase'
 import { CelebrationDialog } from '@/components/CelebrationDialog'
 import { WelcomeScreen } from '@/components/WelcomeScreen'
 import { UsageMonitor } from '@/components/UsageMonitor'
+import { PhaseErrorBoundary } from '@/components/PhaseErrorBoundary'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
 import { Sun, Moon, Globe, ChartLineUp } from '@phosphor-icons/react'
@@ -121,22 +122,40 @@ function App() {
     }
   }
 
+  const handleReturnToDashboard = () => {
+    navigate({ view: 'dashboard' })
+  }
+
   const renderPhase = () => {
     const currentPhase = route.view === 'phase' ? route.phase : journey.currentPhase
-    switch (currentPhase) {
-      case 'brainstorm':
-        return <BrainstormPhase journey={journey} onComplete={handleBrainstormComplete} />
-      case 'story':
-        return <StoryPhase journey={journey} onComplete={handlePhaseComplete} />
-      case 'brand':
-        return <BrandPhase journey={journey} onComplete={handlePhaseComplete} />
-      case 'prd':
-        return <PRDPhase journey={journey} onComplete={handlePhaseComplete} />
-      case 'code':
-        return <CodePhase journey={journey} onComplete={handlePhaseComplete} />
-      case 'github':
-        return <GitHubPhase journey={journey} />
+    
+    const getPhaseComponent = () => {
+      switch (currentPhase) {
+        case 'brainstorm':
+          return <BrainstormPhase journey={journey} onComplete={handleBrainstormComplete} />
+        case 'story':
+          return <StoryPhase journey={journey} onComplete={handlePhaseComplete} />
+        case 'brand':
+          return <BrandPhase journey={journey} onComplete={handlePhaseComplete} />
+        case 'prd':
+          return <PRDPhase journey={journey} onComplete={handlePhaseComplete} />
+        case 'code':
+          return <CodePhase journey={journey} onComplete={handlePhaseComplete} />
+        case 'github':
+          return <GitHubPhase journey={journey} />
+      }
     }
+
+    return (
+      <PhaseErrorBoundary
+        phaseName={t.phases[currentPhase]}
+        phaseKey={currentPhase}
+        onReturnToDashboard={handleReturnToDashboard}
+        language={language}
+      >
+        {getPhaseComponent()}
+      </PhaseErrorBoundary>
+    )
   }
 
   return (

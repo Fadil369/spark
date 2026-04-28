@@ -535,6 +535,22 @@ export const translations = {
       requestsRemaining: 'requests remaining',
     },
 
+    // Error Boundary
+    errorBoundary: {
+      phaseError: 'Phase Error Detected',
+      encounteredError: 'encountered an unexpected error. You can try again or return to the dashboard.',
+      errorType: 'Error Type',
+      errorMessage: 'Error Message',
+      stackTrace: 'Stack Trace',
+      showDetails: 'Show Technical Details',
+      hideDetails: 'Hide Technical Details',
+      copyError: 'Copy Error Info',
+      copied: 'Error details copied to clipboard',
+      copyFailed: 'Failed to copy error details',
+      tip: 'Your progress has been saved. This error only affects the current phase.',
+      persistsMessage: 'If this error persists, try refreshing the page or contact support with the error details.',
+    },
+
     // Common
     back: 'Back',
     next: 'Next',
@@ -1076,6 +1092,22 @@ export const translations = {
       rateLimitWarning: 'لديك {remaining} طلبات متبقية. التجديد في {time}.',
       rateLimitReached: 'تم الوصول إلى حد المعدل. يرجى الانتظار {time} قبل إجراء المزيد من الطلبات.',
       requestsRemaining: 'طلبات متبقية',
+    },
+
+    // Error Boundary
+    errorBoundary: {
+      phaseError: 'خطأ في المرحلة',
+      encounteredError: 'واجه خطأ غير متوقع. يمكنك المحاولة مرة أخرى أو العودة إلى لوحة التحكم.',
+      errorType: 'نوع الخطأ',
+      errorMessage: 'رسالة الخطأ',
+      stackTrace: 'تتبع المكدس',
+      showDetails: 'إظهار التفاصيل التقنية',
+      hideDetails: 'إخفاء التفاصيل التقنية',
+      copyError: 'نسخ معلومات الخطأ',
+      copied: 'تم نسخ تفاصيل الخطأ',
+      copyFailed: 'فشل نسخ تفاصيل الخطأ',
+      tip: 'تم حفظ تقدمك. هذا الخطأ يؤثر فقط على المرحلة الحالية.',
+      persistsMessage: 'إذا استمر هذا الخطأ، حاول تحديث الصفحة أو اتصل بالدعم مع تفاصيل الخطأ.',
     },
 
     // Common
