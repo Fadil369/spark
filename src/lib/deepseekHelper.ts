@@ -1,5 +1,14 @@
-const DEEPSEEK_API_KEY = 'sk-21e093bd78c7478e92e1f8cc681dfe5f'
-const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions'
+const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY
+const DEEPSEEK_API_URL = import.meta.env.VITE_DEEPSEEK_API_URL || 'https://api.deepseek.com/v1/chat/completions'
+
+function validateApiKey(): void {
+  if (!DEEPSEEK_API_KEY || DEEPSEEK_API_KEY === 'your_deepseek_api_key_here') {
+    throw new Error(
+      'DeepSeek API key is not configured. Please add VITE_DEEPSEEK_API_KEY to your .env file. ' +
+      'Get your API key from https://platform.deepseek.com'
+    )
+  }
+}
 
 export interface DeepSeekResponse {
   id: string
@@ -28,6 +37,8 @@ async function callDeepSeek(
   jsonMode: boolean = false
 ): Promise<string> {
   try {
+    validateApiKey()
+    
     const response = await fetch(DEEPSEEK_API_URL, {
       method: 'POST',
       headers: {

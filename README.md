@@ -49,6 +49,7 @@ Spark الشرارة is a comprehensive, gamified platform that guides healthcar
 
 ## 📖 Documentation
 
+- **[ENV_SETUP.md](./ENV_SETUP.md)**: 🔑 **Environment variables setup guide (START HERE)**
 - **[DEEPSEEK_INTEGRATION.md](./DEEPSEEK_INTEGRATION.md)**: Complete DeepSeek AI integration guide
 - **[DEEPSEEK_INTEGRATION_SUMMARY.md](./DEEPSEEK_INTEGRATION_SUMMARY.md)**: Technical implementation summary
 - **[USER_GUIDE_DEEPSEEK.md](./USER_GUIDE_DEEPSEEK.md)**: User-facing improvements and guide
@@ -107,12 +108,46 @@ Spark الشرارة is a comprehensive, gamified platform that guides healthcar
 
 ## 🚀 Getting Started
 
-1. **Start the App**: Open `index.html` in your browser
-2. **Choose Language**: Click the 🌐 Globe icon
-3. **Begin Journey**: Click "Start Your Journey"
-4. **Phase 1**: Enter a healthcare problem and let AI guide you
-5. **Progress**: Complete each phase to unlock the next
-6. **Deploy**: Generate code and optionally create GitHub repo
+### Prerequisites
+
+- Node.js 18+ installed
+- A DeepSeek API key (get one at [platform.deepseek.com](https://platform.deepseek.com))
+
+### Installation
+
+1. **Clone or download this repository**
+
+2. **Configure Environment Variables**
+   ```bash
+   # Copy the example environment file
+   cp .env.example .env
+   
+   # Edit .env and add your DeepSeek API key
+   VITE_DEEPSEEK_API_KEY=sk-your-actual-api-key-here
+   ```
+   
+   📖 **See [ENV_SETUP.md](./ENV_SETUP.md) for detailed configuration instructions**
+
+3. **Install Dependencies**
+   ```bash
+   npm install
+   ```
+
+4. **Start Development Server**
+   ```bash
+   npm run dev
+   ```
+
+5. **Open in Browser**
+   - Navigate to `http://localhost:5173` (or the URL shown in terminal)
+   - Choose your language (🌐 Globe icon)
+   - Click "Start Your Journey"
+
+### Quick Start Guide
+
+1. **Phase 1**: Enter a healthcare problem and let AI guide you
+2. **Progress**: Complete each phase to unlock the next
+3. **Deploy**: Generate code and optionally create GitHub repo
 
 ## 💡 Usage Tips
 
