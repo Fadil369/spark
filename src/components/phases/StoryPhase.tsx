@@ -336,7 +336,7 @@ export function StoryPhase({ journey, onComplete }: StoryPhaseProps) {
               <label className="text-sm font-semibold">{st.targetPatient}</label>
               <Textarea
                 id="target-patient"
-                placeholder="e.g., elderly patients managing multiple chronic conditions, busy working parents..."
+                placeholder={st.targetPatientPlaceholder}
                 value={formData.targetPatient}
                 onChange={(e) => setFormData({ ...formData, targetPatient: e.target.value })}
                 rows={2}
@@ -347,7 +347,7 @@ export function StoryPhase({ journey, onComplete }: StoryPhaseProps) {
               <label className="text-sm font-semibold">{st.coreProblem}</label>
               <Textarea
                 id="core-problem"
-                placeholder="e.g., medication non-adherence leads to 125,000 deaths annually and costs $300B..."
+                placeholder={st.coreProblemPlaceholder}
                 value={formData.coreProblem}
                 onChange={(e) => setFormData({ ...formData, coreProblem: e.target.value })}
                 rows={3}
@@ -358,7 +358,7 @@ export function StoryPhase({ journey, onComplete }: StoryPhaseProps) {
               <label className="text-sm font-semibold">{st.realWorldImpact}</label>
               <Textarea
                 id="impact"
-                placeholder="e.g., preventable hospital readmissions, caregiver burnout, quality of life..."
+                placeholder={st.realWorldImpactPlaceholder}
                 value={formData.impact}
                 onChange={(e) => setFormData({ ...formData, impact: e.target.value })}
                 rows={3}
@@ -369,7 +369,7 @@ export function StoryPhase({ journey, onComplete }: StoryPhaseProps) {
               <label className="text-sm font-semibold">{st.solutionVision}</label>
               <Textarea
                 id="solution-vision"
-                placeholder="e.g., an AI-powered companion that makes medication management feel like having a caring nurse..."
+                placeholder={st.solutionVisionPlaceholder}
                 value={formData.solutionVision}
                 onChange={(e) => setFormData({ ...formData, solutionVision: e.target.value })}
                 rows={3}
