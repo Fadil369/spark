@@ -153,6 +153,12 @@ export const translations = {
       reviewBrandKit: 'Review your complete brand kit',
       startOver: 'Start Over',
       completeBrand: 'Complete Brand Phase',
+      personalityAnalyzed: 'Brand personality analyzed!',
+      analyzeError: 'Failed to analyze personality. Please try again.',
+      completeAllElements: 'Please complete all brand elements',
+      phaseComplete: 'Brand phase complete! 🎨',
+      back: 'Back',
+      continueToTaglineArrow: 'Continue to Tagline',
     },
 
     // PRD Phase
@@ -735,6 +741,12 @@ export const translations = {
       reviewBrandKit: 'راجع مجموعة علامتك التجارية الكاملة',
       startOver: 'البدء من جديد',
       completeBrand: 'إكمال مرحلة العلامة التجارية',
+      personalityAnalyzed: 'تم تحليل شخصية العلامة التجارية!',
+      analyzeError: 'فشل في تحليل الشخصية. يرجى المحاولة مرة أخرى.',
+      completeAllElements: 'يرجى إكمال جميع عناصر العلامة التجارية',
+      phaseComplete: 'اكتملت مرحلة العلامة التجارية! 🎨',
+      back: 'رجوع',
+      continueToTaglineArrow: 'المتابعة للشعار',
     },
 
     // PRD Phase
