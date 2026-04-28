@@ -16,6 +16,7 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import { LiveCodePreview } from '@/components/LiveCodePreview'
 import { DeploymentInstructions } from '@/components/DeploymentInstructions'
 import { getFrameworkBestPractices, getTemplateArchitecture, type FrameworkType, type TemplateType } from '@/lib/frameworkBestPractices'
+import { createAIHelper } from '@/lib/aiHelper'
 
 interface CompletionPhaseProps {
   journey: Journey
@@ -55,34 +56,24 @@ export function StoryPhase({ journey, onComplete }: CompletionPhaseProps) {
 
   const handleGenerateNarrative = async () => {
     if (!formData.targetPatient || !formData.coreProblem || !formData.impact || !formData.solutionVision) {
-      toast.error('Please fill in all fields before generating')
+      toast.error(language === 'ar' ? 'يرجى ملء جميع الحقول قبل التوليد' : 'Please fill in all fields before generating')
       return
     }
 
     setIsGenerating(true)
     try {
-      const toneDescription = tone === 'empathetic' 
-        ? 'warm, compassionate, and emotionally resonant' 
-        : 'data-driven, analytical, and evidence-based'
-
-      const prompt = window.spark.llmPrompt`You are a healthcare startup storytelling expert. Create a compelling founder narrative based on these elements:
-
-Target Patient: ${formData.targetPatient}
-Core Problem: ${formData.coreProblem}
-Impact: ${formData.impact}
-Solution Vision: ${formData.solutionVision}
-
-The tone should be ${toneDescription}.
-
-Write a 3-4 paragraph founder story that:
-1. Opens with the human impact of the problem
-2. Explains why this matters in healthcare
-3. Presents the solution vision with conviction
-4. Ends with a call to action or inspiring vision
-
-Make it authentic, specific to healthcare, and compelling. Return only the narrative text, no JSON.`
+      const aiHelper = createAIHelper(language)
       
-      const narrative = await window.spark.llm(prompt, 'gpt-4o')
+      const narrative = await aiHelper.generateFounderStory({
+        problem: journey.concept?.problem || '',
+        targetUsers: journey.concept?.targetUsers || '',
+        solution: journey.concept?.solution || '',
+        tone,
+        targetPatient: formData.targetPatient,
+        coreProblem: formData.coreProblem,
+        realWorldImpact: formData.impact,
+        solutionVision: formData.solutionVision
+      })
       
       if (!narrative || narrative.trim().length === 0) {
         throw new Error('AI returned empty response for story generation')
@@ -93,10 +84,10 @@ Make it authentic, specific to healthcare, and compelling. Return only the narra
       await scoreNarrative(narrative)
       
       setStep('review')
-      toast.success('Your founder story has been generated!')
+      toast.success(language === 'ar' ? 'تم توليد قصة المؤسس!' : 'Your founder story has been generated!')
     } catch (error: any) {
       const errorMessage = error?.message || 'Unknown error occurred'
-      toast.error(`Story generation failed: ${errorMessage}`)
+      toast.error(language === 'ar' ? `فشل توليد القصة: ${errorMessage}` : `Story generation failed: ${errorMessage}`)
       console.error('[Story Generation Error]', {
         error: errorMessage,
         formData,
@@ -110,20 +101,8 @@ Make it authentic, specific to healthcare, and compelling. Return only the narra
 
   const scoreNarrative = async (narrative: string) => {
     try {
-      const prompt = window.spark.llmPrompt`You are evaluating a healthcare startup founder story. Rate it on three dimensions (0-100):
-
-Story to evaluate:
-"${narrative}"
-
-Return a JSON object with:
-- clarity: How clear and understandable is the problem and solution? (0-100)
-- emotion: How emotionally compelling and human-centered is it? (0-100)
-- healthcare: How specific and credible is it for healthcare context? (0-100)
-
-Only return the JSON object with these three numeric scores.`
-      
-      const response = await window.spark.llm(prompt, 'gpt-4o-mini', true)
-      const scores = JSON.parse(response)
+      const aiHelper = createAIHelper(language)
+      const scores = await aiHelper.scoreStory(narrative)
       setAiScore(scores)
     } catch (error) {
       console.error('Failed to score narrative:', error)
@@ -576,43 +555,28 @@ Base your recommendations on the quiz responses and ensure they align with healt
 
   const generateNames = async () => {
     if (!journey.concept) {
-      toast.error('No concept found. Please complete brainstorm first.')
+      toast.error(language === 'ar' ? 'لا يوجد مفهوم. يرجى إكمال العصف الذهني أولاً.' : 'No concept found. Please complete brainstorm first.')
       return
     }
 
     setIsGenerating(true)
     try {
-      const personalityContext = brandPersonality ? `
-Brand Personality:
-- Archetype: ${brandPersonality.archetype}
-- Tone: ${brandPersonality.tone.join(', ')}
-- Values: ${brandPersonality.values.join(', ')}
-- Target Feeling: ${brandPersonality.targetFeeling}
-- Style: ${brandPersonality.styleDirection}
-` : ''
-
-      const prompt = window.spark.llmPrompt`You are a healthcare startup naming expert. Generate 8 unique, memorable startup names based on this concept:
-
-Problem: ${journey.concept.problem}
-Target Users: ${journey.concept.targetUsers}
-Solution: ${journey.concept.solution}
-${personalityContext}
-Generate names that:
-- Are 1-2 words
-- Sound professional yet approachable
-- Work well in healthcare context
-- Are memorable and modern
-- Mix different styles (portmanteaus, descriptive, abstract, playful)
-${brandPersonality ? `- Align with the ${brandPersonality.archetype} archetype and ${brandPersonality.tone.join('/')} tone` : ''}
-
-Return a JSON object with a single property "names" containing an array of exactly 8 name strings.`
+      const aiHelper = createAIHelper(language)
+      const conceptStr = `${journey.concept.problem} - ${journey.concept.targetUsers} - ${journey.concept.solution}`
       
-      const response = await window.spark.llm(prompt, 'gpt-4o', true)
-      const result = JSON.parse(response)
-      setNameOptions(result.names || [])
-      toast.success('Names generated!')
+      const names = brandPersonality 
+        ? await aiHelper.generateBrandName(brandPersonality, conceptStr)
+        : await aiHelper.generateBrandName({
+            archetype: 'Caregiver',
+            tone: ['professional', 'empathetic'],
+            values: ['trust', 'care'],
+            targetFeeling: 'secure and supported'
+          }, conceptStr)
+      
+      setNameOptions(names)
+      toast.success(language === 'ar' ? 'تم توليد الأسماء!' : 'Names generated!')
     } catch (error) {
-      toast.error('Failed to generate names. Please try again.')
+      toast.error(language === 'ar' ? 'فشل توليد الأسماء. يرجى المحاولة مجدداً.' : 'Failed to generate names. Please try again.')
       console.error(error)
     } finally {
       setIsGenerating(false)
@@ -621,33 +585,20 @@ Return a JSON object with a single property "names" containing an array of exact
 
   const generateTaglines = async () => {
     if (!selectedName) {
-      toast.error('Please select a name first')
+      toast.error(language === 'ar' ? 'يرجى اختيار اسم أولاً' : 'Please select a name first')
       return
     }
 
     setIsGenerating(true)
     try {
-      const prompt = window.spark.llmPrompt`You are a healthcare marketing expert. Generate 6 powerful taglines for this startup:
-
-Name: ${selectedName}
-Problem: ${journey.concept?.problem || ''}
-Solution: ${journey.concept?.solution || ''}
-
-Generate taglines that:
-- Are 3-6 words
-- Are clear and memorable
-- Convey value and emotion
-- Work for healthcare context
-- Vary in style (aspirational, benefit-focused, mission-driven)
-
-Return a JSON object with a single property "taglines" containing an array of exactly 6 tagline strings.`
+      const aiHelper = createAIHelper(language)
+      const conceptStr = `${journey.concept?.problem || ''} - ${journey.concept?.solution || ''}`
       
-      const response = await window.spark.llm(prompt, 'gpt-4o', true)
-      const result = JSON.parse(response)
-      setTaglineOptions(result.taglines || [])
-      toast.success('Taglines generated!')
+      const taglines = await aiHelper.generateTaglines(selectedName, conceptStr)
+      setTaglineOptions(taglines)
+      toast.success(language === 'ar' ? 'تم توليد الشعارات!' : 'Taglines generated!')
     } catch (error) {
-      toast.error('Failed to generate taglines. Please try again.')
+      toast.error(language === 'ar' ? 'فشل توليد الشعارات. يرجى المحاولة مجدداً.' : 'Failed to generate taglines. Please try again.')
       console.error(error)
     } finally {
       setIsGenerating(false)

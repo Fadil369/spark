@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import { successToast } from '@/lib/toastWithLogo'
 import { AILoadingScreen } from '@/components/AILoadingScreen'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { createAIHelper } from '@/lib/aiHelper'
 
 interface BrainstormPhaseProps {
   journey: Journey
@@ -60,11 +61,9 @@ export function BrainstormPhase({ journey, onComplete }: BrainstormPhaseProps) {
 
     setIsGenerating(true)
     try {
-      const prompt = window.spark.llmPrompt`You are a healthcare startup advisor. Based on these healthcare problems or themes: "${input}", generate 8 related healthcare concepts, keywords, or problem areas. Return a JSON object with a single property "keywords" that contains an array of short phrases (2-4 words each).`
-      
-      const response = await window.spark.llm(prompt, 'gpt-4o-mini', true)
-      const data = JSON.parse(response)
-      setKeywords(data.keywords || [])
+      const aiHelper = createAIHelper(language)
+      const generatedKeywords = await aiHelper.generateHealthcareConcepts(input)
+      setKeywords(generatedKeywords)
       setStep('refine')
       successToast(language === 'ar' ? 'تم توليد المفاهيم الصحية بنجاح!' : 'AI generated related healthcare concepts!')
     } catch (error) {
@@ -78,19 +77,12 @@ export function BrainstormPhase({ journey, onComplete }: BrainstormPhaseProps) {
   const handleRefineConcept = async () => {
     setIsGenerating(true)
     try {
-      const allKeywords = [input, ...keywords].join(', ')
-      const prompt = window.spark.llmPrompt`You are a healthcare startup advisor. Based on these healthcare themes: "${allKeywords}", create a structured startup concept. Return a JSON object with:
-      - problem: A clear 1-2 sentence description of the healthcare problem
-      - targetUsers: Who is affected (e.g., "elderly diabetic patients", "primary care physicians")
-      - solution: A 2-3 sentence proposed solution vision
-      Make it specific to healthcare and actionable.`
-      
-      const response = await window.spark.llm(prompt, 'gpt-4o-mini', true)
-      const data = JSON.parse(response)
+      const aiHelper = createAIHelper(language)
+      const refinedConcept = await aiHelper.refineConcept(input, keywords)
       setConcept({
-        problem: data.problem,
-        targetUsers: data.targetUsers,
-        solution: data.solution,
+        problem: refinedConcept.problem,
+        targetUsers: refinedConcept.targetUsers,
+        solution: refinedConcept.solution,
         keywords: [...keywords, input]
       })
       setStep('finalize')

@@ -12,6 +12,8 @@ import { Sparkle, CheckCircle, Circle, ArrowRight, FileText, FilePdf } from '@ph
 import { toast } from 'sonner'
 import { completePhase } from '@/lib/game'
 import { exportPRDToPDF } from '@/lib/prdExport'
+import { useLanguage } from '@/contexts/LanguageContext'
+import { createAIHelper } from '@/lib/aiHelper'
 
 interface PRDPhaseProps {
   journey: Journey
@@ -195,6 +197,7 @@ const REGULATORY_CHECKLIST = [
 ]
 
 export function PRDPhase({ journey, onComplete }: PRDPhaseProps) {
+  const { language, t } = useLanguage()
   const [activeSection, setActiveSection] = useState<SectionKey>('problem')
   const [sections, setSections] = useState<Record<SectionKey, PRDSection>>({
     problem: { title: 'Problem Statement', content: '', completed: false },
@@ -268,48 +271,21 @@ export function PRDPhase({ journey, onComplete }: PRDPhaseProps) {
         contextParts.push(`Tagline: ${journey.brand.tagline}`)
       }
 
-      const personalityContext = journey.brand?.personality ? `
-Brand Personality Profile:
-- Archetype: ${journey.brand.personality.archetype}
-- Tone: ${journey.brand.personality.tone.join(', ')}
-- Core Values: ${journey.brand.personality.values.join(', ')}
-- Target Feeling: ${journey.brand.personality.targetFeeling}
-- Style Direction: ${journey.brand.personality.styleDirection}
-
-Use this personality to guide the writing tone and emphasis. Match the ${journey.brand.personality.archetype} archetype and ${journey.brand.personality.tone.join('/')} tone throughout the content. Emphasize the values of ${journey.brand.personality.values.join(', ')}.` : ''
-
-      const toneGuidance = journey.brand?.personality 
-        ? `Write in a ${journey.brand.personality.tone.join(', ')} tone that reflects the ${journey.brand.personality.archetype} brand archetype. The content should make readers feel ${journey.brand.personality.targetFeeling}.`
-        : 'Write in a professional, clear tone suitable for healthcare stakeholders.'
-
+      const context = contextParts.join('\n')
       const existingContent = sections[section].content.trim()
-      const prompt = window.spark.llmPrompt`You are a healthcare product strategist writing a PRD section.
-
-Section: ${config.title}
-Description: ${config.description}
-
-Context from the startup journey:
-${contextParts.join('\n')}
-${personalityContext}
-
-${existingContent ? `Current draft:\n${existingContent}\n\nImprove and expand the above draft while maintaining the brand personality and tone.` : `Create content for this section using the following template as a guide:\n${config.template}`}
-
-Guidelines:
-- Be specific to healthcare context
-- Use concrete examples and data points
-- Focus on clinical value and patient outcomes
-- ${config.helpText}
-- ${toneGuidance}
-- Write in markdown format
-- Be comprehensive but concise (300-500 words)
-
-Return only the section content, no JSON.`
+      const aiHelper = createAIHelper(language)
       
-      const content = await window.spark.llm(prompt, 'gpt-4o')
+      let content: string
+      if (existingContent) {
+        content = await aiHelper.improvePRDSection(config.title, existingContent, context)
+      } else {
+        content = await aiHelper.suggestPRDContent(config.title, context)
+      }
+      
       handleContentChange(section, content.trim())
-      toast.success('Content generated with your brand personality!')
+      toast.success(language === 'ar' ? 'تم توليد المحتوى بشخصية علامتك التجارية!' : 'Content generated with your brand personality!')
     } catch (error) {
-      toast.error('Failed to generate content. Please try again.')
+      toast.error(language === 'ar' ? 'فشل توليد المحتوى. يرجى المحاولة مجدداً.' : 'Failed to generate content. Please try again.')
       console.error(error)
     } finally {
       setIsGenerating(false)
