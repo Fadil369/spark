@@ -21,6 +21,72 @@ export interface DeepSeekResponse {
   }
 }
 
+async function callDeepSeek(
+  prompt: string,
+  temperature: number = 0.7,
+  maxTokens: number = 2000,
+  jsonMode: boolean = false
+): Promise<string> {
+  try {
+    const response = await fetch(DEEPSEEK_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert AI assistant specializing in healthcare technology, startup development, and user experience design. Provide thoughtful, personalized, and actionable insights.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature,
+        max_tokens: maxTokens,
+        ...(jsonMode && { response_format: { type: 'json_object' } })
+      })
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(`DeepSeek API error: ${response.status} - ${JSON.stringify(errorData)}`)
+    }
+
+    const data: DeepSeekResponse = await response.json()
+    const content = data.choices[0]?.message?.content || ''
+    
+    if (!content) {
+      throw new Error('Empty response from DeepSeek API')
+    }
+
+    return content
+  } catch (error) {
+    console.error('DeepSeek API call failed:', error)
+    throw error
+  }
+}
+
+function cleanJsonResponse(content: string): string {
+  let cleaned = content.trim()
+  
+  if (cleaned.startsWith('```json')) {
+    cleaned = cleaned.slice(7)
+  } else if (cleaned.startsWith('```')) {
+    cleaned = cleaned.slice(3)
+  }
+  
+  if (cleaned.endsWith('```')) {
+    cleaned = cleaned.slice(0, -3)
+  }
+  
+  return cleaned.trim()
+}
+
 export interface CodeValidationResult {
   isValid: boolean
   errors: string[]
@@ -41,25 +107,128 @@ export interface CodeEnhancement {
   explanations: string[]
 }
 
+export async function generatePersonalizedConcepts(
+  userInput: string,
+  language: 'en' | 'ar'
+): Promise<string[]> {
+  const languageInstruction = language === 'ar'
+    ? 'Generate healthcare concepts in Arabic with professional terminology.'
+    : 'Generate healthcare concepts in English.'
+
+  const prompt = `Based on this healthcare idea or problem: "${userInput}"
+
+${languageInstruction}
+
+Generate 8 related, specific healthcare concepts or problem areas. Make each concept:
+- Actionable and specific
+- Relevant to real healthcare challenges
+- 2-4 words per concept
+
+Return a JSON object:
+{
+  "concepts": ["array of 8 healthcare concept phrases"]
+}`
+
+  const content = await callDeepSeek(prompt, 0.8, 1000, true)
+  const cleaned = cleanJsonResponse(content)
+  const result = JSON.parse(cleaned)
+  
+  return Array.isArray(result.concepts) ? result.concepts : []
+}
+
+export async function refineConceptWithAI(
+  userInput: string,
+  selectedKeywords: string[],
+  language: 'en' | 'ar'
+): Promise<{ problem: string; targetUsers: string; solution: string }> {
+  const languageInstruction = language === 'ar'
+    ? 'Write in professional Arabic suitable for healthcare.'
+    : 'Write in clear, professional English.'
+
+  const allContext = [userInput, ...selectedKeywords].join(', ')
+
+  const prompt = `Based on these healthcare themes: "${allContext}"
+
+${languageInstruction}
+
+Create a structured startup concept with:
+- problem: Clear 1-2 sentence healthcare problem description
+- targetUsers: Specific user personas (e.g., "elderly diabetic patients", "oncology nurses")
+- solution: 2-3 sentence proposed solution vision
+
+Return a JSON object:
+{
+  "problem": "...",
+  "targetUsers": "...",
+  "solution": "..."
+}`
+
+  const content = await callDeepSeek(prompt, 0.7, 1500, true)
+  const cleaned = cleanJsonResponse(content)
+  const result = JSON.parse(cleaned)
+  
+  return {
+    problem: result.problem || '',
+    targetUsers: result.targetUsers || '',
+    solution: result.solution || ''
+  }
+}
+
+export async function generatePersonalizedStory(
+  concept: { problem: string; targetUsers: string; solution: string },
+  storyParams: {
+    tone: 'empathetic' | 'scientific'
+    targetPatient: string
+    coreProblem: string
+    impact: string
+    vision: string
+  },
+  language: 'en' | 'ar'
+): Promise<string> {
+  const toneDesc = storyParams.tone === 'empathetic'
+    ? 'warm, human-centered, emphasizing patient experiences'
+    : 'data-driven, clinical, focusing on evidence and outcomes'
+
+  const languageInstruction = language === 'ar'
+    ? 'Write an eloquent, professional founder story in Arabic.'
+    : 'Write a compelling founder story in English.'
+
+  const prompt = `Create a healthcare startup founder story with this context:
+
+Problem: ${concept.problem}
+Target Users: ${concept.targetUsers}
+Solution: ${concept.solution}
+Patient Focus: ${storyParams.targetPatient}
+Core Challenge: ${storyParams.coreProblem}
+Real Impact: ${storyParams.impact}
+Vision: ${storyParams.vision}
+
+Tone: ${toneDesc}
+${languageInstruction}
+
+Write a cohesive, inspiring 3-4 paragraph narrative that connects these elements authentically. Make it emotionally engaging and credible.`
+
+  return await callDeepSeek(prompt, 0.8, 2000, false)
+}
+
 export async function validateCodeWithDeepSeek(
   code: string,
   language: string,
   context?: string
 ): Promise<CodeValidationResult> {
-  try {
-    const prompt = `You are an expert code validator specializing in healthcare applications. Analyze this ${language} code for quality, security, and healthcare compliance.
+  const prompt = `Analyze this ${language} code for healthcare application quality, security, and compliance.
 
-${context ? `Context: ${context}\n\n` : ''}Code to validate:
+${context ? `Context: ${context}\n\n` : ''}Code:
 \`\`\`${language}
 ${code}
 \`\`\`
 
-Provide a comprehensive validation report in JSON format:
+Evaluate and return JSON:
 {
   "isValid": boolean,
-  "errors": ["critical issues that must be fixed"],
-  "warnings": ["potential issues to address"],
-  "suggestions": ["improvement recommendations"],
+  "errors": ["critical issues"],
+  "warnings": ["potential issues"],
+  "suggestions": ["improvements"],
   "quality": {
     "structure": 0-100,
     "security": 0-100,
@@ -69,70 +238,24 @@ Provide a comprehensive validation report in JSON format:
   }
 }
 
-Focus on:
-- Healthcare data security and HIPAA compliance
-- Accessibility (WCAG 2.1 AA)
-- Performance and optimization
-- Code structure and maintainability
-- Common vulnerabilities (XSS, CSRF, injection)
+Focus on: HIPAA compliance, accessibility (WCAG 2.1 AA), performance, security (XSS, CSRF, injection), maintainability.`
 
-Return ONLY the JSON object, no markdown formatting.`
-
-    const response = await fetch(DEEPSEEK_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.3,
-        max_tokens: 2000
-      })
-    })
-
-    if (!response.ok) {
-      throw new Error(`DeepSeek API error: ${response.status} ${response.statusText}`)
+  const content = await callDeepSeek(prompt, 0.3, 2000, true)
+  const cleaned = cleanJsonResponse(content)
+  const result = JSON.parse(cleaned)
+  
+  return {
+    isValid: result.isValid ?? true,
+    errors: Array.isArray(result.errors) ? result.errors : [],
+    warnings: Array.isArray(result.warnings) ? result.warnings : [],
+    suggestions: Array.isArray(result.suggestions) ? result.suggestions : [],
+    quality: {
+      structure: result.quality?.structure ?? 70,
+      security: result.quality?.security ?? 70,
+      performance: result.quality?.performance ?? 70,
+      accessibility: result.quality?.accessibility ?? 70,
+      overall: result.quality?.overall ?? 70
     }
-
-    const data: DeepSeekResponse = await response.json()
-    const content = data.choices[0]?.message?.content || '{}'
-    
-    let cleanContent = content.trim()
-    if (cleanContent.startsWith('```json')) {
-      cleanContent = cleanContent.slice(7)
-    }
-    if (cleanContent.startsWith('```')) {
-      cleanContent = cleanContent.slice(3)
-    }
-    if (cleanContent.endsWith('```')) {
-      cleanContent = cleanContent.slice(0, -3)
-    }
-    
-    const result = JSON.parse(cleanContent.trim())
-    
-    return {
-      isValid: result.isValid ?? true,
-      errors: Array.isArray(result.errors) ? result.errors : [],
-      warnings: Array.isArray(result.warnings) ? result.warnings : [],
-      suggestions: Array.isArray(result.suggestions) ? result.suggestions : [],
-      quality: {
-        structure: result.quality?.structure ?? 70,
-        security: result.quality?.security ?? 70,
-        performance: result.quality?.performance ?? 70,
-        accessibility: result.quality?.accessibility ?? 70,
-        overall: result.quality?.overall ?? 70
-      }
-    }
-  } catch (error) {
-    console.error('DeepSeek validation error:', error)
-    throw new Error(`Code validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }
 
@@ -141,83 +264,35 @@ export async function enhanceCodeWithDeepSeek(
   language: string,
   enhancementGoals: string[]
 ): Promise<CodeEnhancement> {
-  try {
-    const goalsText = enhancementGoals.join(', ')
-    
-    const prompt = `You are an expert code enhancement specialist for healthcare applications. Enhance this ${language} code to improve: ${goalsText}.
+  const goalsText = enhancementGoals.join(', ')
+  
+  const prompt = `Enhance this ${language} code to improve: ${goalsText}
 
 Original Code:
 \`\`\`${language}
 ${code}
 \`\`\`
 
-Enhancement Goals:
+Goals:
 ${enhancementGoals.map((g, i) => `${i + 1}. ${g}`).join('\n')}
 
-Provide enhanced code with detailed improvements in JSON format:
+Return JSON:
 {
-  "enhancedCode": "the complete enhanced code",
-  "improvements": ["list of specific improvements made"],
-  "explanations": ["detailed explanations for each improvement"]
+  "enhancedCode": "improved code",
+  "improvements": ["specific improvements"],
+  "explanations": ["detailed explanations"]
 }
 
-Focus on:
-- Healthcare-specific best practices
-- Security and compliance (HIPAA)
-- Accessibility improvements
-- Performance optimizations
-- Modern design patterns
-- Clean, maintainable code
+Focus on: healthcare best practices, HIPAA, accessibility, performance, modern patterns, maintainability.`
 
-Return ONLY the JSON object, no markdown formatting.`
-
-    const response = await fetch(DEEPSEEK_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.4,
-        max_tokens: 4000
-      })
-    })
-
-    if (!response.ok) {
-      throw new Error(`DeepSeek API error: ${response.status} ${response.statusText}`)
-    }
-
-    const data: DeepSeekResponse = await response.json()
-    const content = data.choices[0]?.message?.content || '{}'
-    
-    let cleanContent = content.trim()
-    if (cleanContent.startsWith('```json')) {
-      cleanContent = cleanContent.slice(7)
-    }
-    if (cleanContent.startsWith('```')) {
-      cleanContent = cleanContent.slice(3)
-    }
-    if (cleanContent.endsWith('```')) {
-      cleanContent = cleanContent.slice(0, -3)
-    }
-    
-    const result = JSON.parse(cleanContent.trim())
-    
-    return {
-      enhancedCode: result.enhancedCode || code,
-      improvements: Array.isArray(result.improvements) ? result.improvements : [],
-      explanations: Array.isArray(result.explanations) ? result.explanations : []
-    }
-  } catch (error) {
-    console.error('DeepSeek enhancement error:', error)
-    throw new Error(`Code enhancement failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+  const content = await callDeepSeek(prompt, 0.4, 4000, true)
+  const cleaned = cleanJsonResponse(content)
+  const result = JSON.parse(cleaned)
+  
+  return {
+    enhancedCode: result.enhancedCode || code,
+    improvements: Array.isArray(result.improvements) ? result.improvements : [],
+    explanations: Array.isArray(result.explanations) ? result.explanations : []
   }
 }
 
@@ -226,70 +301,151 @@ export async function generateCodeSuggestions(
   language: string,
   framework?: string
 ): Promise<string[]> {
-  try {
-    const prompt = `You are a code improvement expert for healthcare applications. Analyze this ${language}${framework ? ` (${framework})` : ''} code and provide 5-7 specific, actionable improvement suggestions.
+  const prompt = `Analyze this ${language}${framework ? ` (${framework})` : ''} code for healthcare applications.
 
 Code:
 \`\`\`${language}
 ${code}
 \`\`\`
 
-Return a JSON object:
+Provide 5-7 specific, actionable improvement suggestions. Return JSON:
 {
-  "suggestions": ["array of specific, actionable suggestions"]
+  "suggestions": ["array of actionable suggestions"]
 }
 
-Focus on:
-- Healthcare data security
-- Accessibility improvements
-- Performance optimizations
-- Modern best practices
-- User experience enhancements
+Focus on: healthcare data security, accessibility, performance, modern best practices, UX enhancements.`
 
-Return ONLY the JSON object, no markdown formatting.`
+  const content = await callDeepSeek(prompt, 0.5, 1500, true)
+  const cleaned = cleanJsonResponse(content)
+  const result = JSON.parse(cleaned)
+  
+  return Array.isArray(result.suggestions) ? result.suggestions : []
+}
 
-    const response = await fetch(DEEPSEEK_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.5,
-        max_tokens: 1500
-      })
-    })
+export async function generateBrandNames(
+  personality: {
+    archetype: string
+    tone: string[]
+    values: string[]
+    targetFeeling: string
+  },
+  concept: string,
+  language: 'en' | 'ar'
+): Promise<string[]> {
+  const languageInstruction = language === 'ar'
+    ? 'Generate creative Arabic or bilingual (Arabic-English) brand names.'
+    : 'Generate creative, memorable English brand names.'
 
-    if (!response.ok) {
-      throw new Error(`DeepSeek API error: ${response.status} ${response.statusText}`)
-    }
+  const prompt = `Create healthcare brand names based on:
 
-    const data: DeepSeekResponse = await response.json()
-    const content = data.choices[0]?.message?.content || '{}'
-    
-    let cleanContent = content.trim()
-    if (cleanContent.startsWith('```json')) {
-      cleanContent = cleanContent.slice(7)
-    }
-    if (cleanContent.startsWith('```')) {
-      cleanContent = cleanContent.slice(3)
-    }
-    if (cleanContent.endsWith('```')) {
-      cleanContent = cleanContent.slice(0, -3)
-    }
-    
-    const result = JSON.parse(cleanContent.trim())
-    
-    return Array.isArray(result.suggestions) ? result.suggestions : []
-  } catch (error) {
-    console.error('DeepSeek suggestions error:', error)
-    throw new Error(`Suggestion generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+Archetype: ${personality.archetype}
+Tone: ${personality.tone.join(', ')}
+Values: ${personality.values.join(', ')}
+Target Feeling: ${personality.targetFeeling}
+Concept: ${concept}
+
+${languageInstruction}
+
+Generate 6 unique, professional, memorable healthcare brand names. Return JSON:
+{
+  "names": ["array of 6 brand names"]
+}`
+
+  const content = await callDeepSeek(prompt, 0.9, 1000, true)
+  const cleaned = cleanJsonResponse(content)
+  const result = JSON.parse(cleaned)
+  
+  return Array.isArray(result.names) ? result.names : []
+}
+
+export async function generateTaglines(
+  brandName: string,
+  concept: string,
+  language: 'en' | 'ar'
+): Promise<string[]> {
+  const languageInstruction = language === 'ar'
+    ? 'Generate concise, impactful taglines in Arabic.'
+    : 'Generate concise, impactful taglines in English.'
+
+  const prompt = `For brand "${brandName}" with concept: "${concept}"
+
+${languageInstruction}
+
+Generate 5 compelling taglines. Each should be 3-7 words, memorable, healthcare-focused. Return JSON:
+{
+  "taglines": ["array of 5 taglines"]
+}`
+
+  const content = await callDeepSeek(prompt, 0.8, 800, true)
+  const cleaned = cleanJsonResponse(content)
+  const result = JSON.parse(cleaned)
+  
+  return Array.isArray(result.taglines) ? result.taglines : []
+}
+
+export async function generatePRDContent(
+  sectionTitle: string,
+  context: string,
+  currentContent: string,
+  language: 'en' | 'ar',
+  isImprovement: boolean = false
+): Promise<string> {
+  const languageInstruction = language === 'ar'
+    ? 'Write in professional Arabic with healthcare and technical terminology.'
+    : 'Write in clear, professional English.'
+
+  const prompt = isImprovement
+    ? `Improve this PRD section:
+
+Section: ${sectionTitle}
+Current Content: "${currentContent}"
+Product Context: "${context}"
+
+${languageInstruction}
+
+Provide enhanced content that is more detailed, actionable, and healthcare-specific. Focus on clarity and completeness.`
+    : `Generate content for this PRD section:
+
+Section: ${sectionTitle}
+Product Context: "${context}"
+
+${languageInstruction}
+
+Write comprehensive, actionable content focused on healthcare specifics. Be detailed and practical.`
+
+  return await callDeepSeek(prompt, 0.7, 2000, false)
+}
+
+export async function analyzeStoryQuality(story: string): Promise<{
+  clarity: number
+  emotion: number
+  healthcare: number
+}> {
+  const prompt = `Evaluate this healthcare startup founder story:
+
+"${story}"
+
+Rate on three dimensions (0-100):
+- clarity: How clear and coherent?
+- emotion: How emotionally engaging?
+- healthcare: How well does it address healthcare challenges?
+
+Return JSON:
+{
+  "clarity": 0-100,
+  "emotion": 0-100,
+  "healthcare": 0-100
+}
+
+Be critical but fair. Most good stories score 65-85.`
+
+  const content = await callDeepSeek(prompt, 0.3, 500, true)
+  const cleaned = cleanJsonResponse(content)
+  const result = JSON.parse(cleaned)
+  
+  return {
+    clarity: Math.min(100, Math.max(0, result.clarity || 70)),
+    emotion: Math.min(100, Math.max(0, result.emotion || 70)),
+    healthcare: Math.min(100, Math.max(0, result.healthcare || 70))
   }
 }
