@@ -49,12 +49,29 @@ Spark الشرارة is a comprehensive, gamified platform that guides healthcar
 
 ## 📖 Documentation
 
+### 🚀 Getting Started
 - **[ENV_SETUP.md](./ENV_SETUP.md)**: 🔑 **Environment variables setup guide (START HERE)**
+- **[README.md](./README.md)**: This file - project overview and quick start
+
+### 📋 Deployment & Testing
+- **[DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md)**: Pre-deployment verification checklist
+- **[LATEST_CHANGES.md](./LATEST_CHANGES.md)**: Current status and recent updates summary
+- **[TESTING_CHECKLIST.md](./TESTING_CHECKLIST.md)**: Manual testing verification
+- **[CHANGELOG.md](./CHANGELOG.md)**: Version history and changes
+
+### 🤖 AI Integration
 - **[DEEPSEEK_INTEGRATION.md](./DEEPSEEK_INTEGRATION.md)**: Complete DeepSeek AI integration guide
 - **[DEEPSEEK_INTEGRATION_SUMMARY.md](./DEEPSEEK_INTEGRATION_SUMMARY.md)**: Technical implementation summary
 - **[USER_GUIDE_DEEPSEEK.md](./USER_GUIDE_DEEPSEEK.md)**: User-facing improvements and guide
-- **[PRD.md](./PRD.md)**: Complete product requirements document
+
+### 📐 Product & Design
+- **[PRD.md](./PRD.md)**: Complete product requirements document (50+ pages)
 - **[LANGUAGE_AND_THEME_UPDATES.md](./LANGUAGE_AND_THEME_UPDATES.md)**: Translation and theming details
+
+### 🛠️ Technical Documentation
+- **[CODE_QUALITY_IMPROVEMENTS.md](./CODE_QUALITY_IMPROVEMENTS.md)**: Code quality enhancements summary
+- **[ERROR_RECOVERY_SYSTEM.md](./ERROR_RECOVERY_SYSTEM.md)**: Error handling documentation
+- **[SECURITY.md](./SECURITY.md)**: Security best practices
 
 ## 🎮 The Journey
 
