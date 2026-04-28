@@ -128,7 +128,110 @@ export function StoryPhase({ journey, onComplete }: CompletionPhaseProps) {
       onComplete(completedJourney)
     }
     
-    toast.success(language === 'ar' ? 'مرحلة القصة مكتملة! 🎉' : 'Story phase complete! 🎉')
+    successToast(language === 'ar' ? 'مرحلة القصة مكتملة! 🎉' : 'Story phase complete! 🎉')
+  }
+
+  const handleImproveStory = async () => {
+    if (!generatedNarrative || generatedNarrative.trim().length === 0) {
+      toast.error(language === 'ar' ? 'يرجى توليد قصة أولاً' : 'Please generate a story first')
+      return
+    }
+
+    setIsGenerating(true)
+    try {
+      const aiHelper = createAIHelper(language)
+      
+      const improvements = []
+      if (aiScore && aiScore.clarity < 70) improvements.push(st.clearerVision)
+      if (aiScore && aiScore.emotion < 70) improvements.push(st.moreEmotional)
+      if (aiScore && aiScore.healthcare < 70) improvements.push(st.strongerImpact)
+      if (improvements.length === 0) improvements.push(st.betterFlow, st.strongerImpact)
+      
+      const improved = await aiHelper.improveStory(generatedNarrative, improvements)
+      
+      if (!improved || improved.trim().length === 0) {
+        throw new Error('AI returned empty response for story improvement')
+      }
+
+      setGeneratedNarrative(improved.trim())
+      await scoreNarrative(improved)
+      
+      successToast(st.storyImproved)
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Unknown error occurred'
+      toast.error(language === 'ar' ? `فشل تحسين القصة: ${errorMessage}` : `Story improvement failed: ${errorMessage}`)
+      console.error('[Story Improvement Error]', {
+        error: errorMessage,
+        timestamp: new Date().toISOString()
+      })
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleTranslateStory = async () => {
+    if (!generatedNarrative || generatedNarrative.trim().length === 0) {
+      toast.error(language === 'ar' ? 'يرجى توليد قصة أولاً' : 'Please generate a story first')
+      return
+    }
+
+    setIsGenerating(true)
+    try {
+      const aiHelper = createAIHelper(language)
+      const targetLanguage = language === 'ar' ? 'en' : 'ar'
+      
+      const translated = await aiHelper.translateStory(generatedNarrative, targetLanguage)
+      
+      if (!translated || translated.trim().length === 0) {
+        throw new Error('AI returned empty response for story translation')
+      }
+
+      setGeneratedNarrative(translated.trim())
+      
+      successToast(st.storyTranslated)
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Unknown error occurred'
+      toast.error(language === 'ar' ? `فشلت الترجمة: ${errorMessage}` : `Translation failed: ${errorMessage}`)
+      console.error('[Story Translation Error]', {
+        error: errorMessage,
+        timestamp: new Date().toISOString()
+      })
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleExportPDF = async () => {
+    if (!generatedNarrative || generatedNarrative.trim().length === 0) {
+      toast.error(language === 'ar' ? 'يرجى توليد قصة أولاً' : 'Please generate a story first')
+      return
+    }
+
+    try {
+      const { exportStoryToPDF } = await import('@/lib/prdExport')
+      
+      exportStoryToPDF(generatedNarrative, {
+        brandName: journey.brand?.name,
+        tone: tone,
+        targetPatient: formData.targetPatient,
+        coreProblem: formData.coreProblem,
+        impact: formData.impact,
+        solutionVision: formData.solutionVision,
+        aiScore: aiScore || undefined,
+        colors: journey.brand?.colors,
+        language: language,
+        isRTL: language === 'ar'
+      })
+      
+      successToast(st.pdfExported)
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Unknown error occurred'
+      toast.error(st.pdfExportFailed)
+      console.error('[PDF Export Error]', {
+        error: errorMessage,
+        timestamp: new Date().toISOString()
+      })
+    }
   }
 
   const getScoreColor = (score: number) => {
@@ -368,6 +471,49 @@ export function StoryPhase({ journey, onComplete }: CompletionPhaseProps) {
                 <ArrowRight className="ml-2" weight="bold" />
               </Button>
             </CardFooter>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{language === 'ar' ? 'أدوات إضافية' : 'Additional Tools'}</CardTitle>
+              <CardDescription>
+                {language === 'ar' 
+                  ? 'تحسين أو ترجمة أو تصدير قصتك' 
+                  : 'Improve, translate, or export your story'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={handleImproveStory}
+                  disabled={isGenerating}
+                  className="flex-1 min-w-[180px]"
+                >
+                  <Brain className="mr-2" weight="bold" />
+                  {st.improveStory}
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={handleTranslateStory}
+                  disabled={isGenerating}
+                  className="flex-1 min-w-[180px]"
+                >
+                  <Users className="mr-2" weight="bold" />
+                  {language === 'ar' ? st.translateToEnglish : st.translateToArabic}
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={handleExportPDF}
+                  className="flex-1 min-w-[180px]"
+                >
+                  <Package className="mr-2" weight="bold" />
+                  {st.exportPDF}
+                </Button>
+              </div>
+            </CardContent>
           </Card>
         </div>
       )}

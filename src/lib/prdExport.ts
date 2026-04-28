@@ -471,3 +471,231 @@ export const exportPRDToPDF = (prd: PRD, options: ExportOptions = {}) => {
   
   doc.save(fileName)
 }
+
+export const exportStoryToPDF = (
+  story: string,
+  options: {
+    brandName?: string
+    tone?: string
+    targetPatient?: string
+    coreProblem?: string
+    impact?: string
+    solutionVision?: string
+    aiScore?: { clarity: number; emotion: number; healthcare: number }
+    colors?: { primary: string; secondary: string; accent: string }
+    language?: 'en' | 'ar'
+    isRTL?: boolean
+  } = {}
+) => {
+  const isRTL = options.isRTL || options.language === 'ar'
+  const language = options.language || 'en'
+  
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4'
+  })
+
+  const pageWidth = doc.internal.pageSize.getWidth()
+  const pageHeight = doc.internal.pageSize.getHeight()
+  const margin = 20
+  const contentWidth = pageWidth - 2 * margin
+  let yPosition = margin
+
+  const primaryColor = options.colors?.primary ? parseOklch(options.colors.primary) : { l: 0.58, c: 0.15, h: 65 }
+  const accentColor = options.colors?.accent ? parseOklch(options.colors.accent) : { l: 0.78, c: 0.12, h: 45 }
+  
+  const primaryRgb = oklchToRgb(primaryColor.l, primaryColor.c, primaryColor.h)
+  const accentRgb = oklchToRgb(accentColor.l, accentColor.c, accentColor.h)
+
+  const addNewPageIfNeeded = (requiredSpace: number) => {
+    if (yPosition + requiredSpace > pageHeight - margin) {
+      doc.addPage()
+      yPosition = margin
+      return true
+    }
+    return false
+  }
+
+  const wrapText = (text: string, maxWidth: number): string[] => {
+    const preparedText = isRTL ? prepareArabicForPDF(text, isRTL) : text
+    return doc.splitTextToSize(preparedText, maxWidth) as string[]
+  }
+
+  const addText = (text: string, x: number, y: number, options?: { align?: 'left' | 'center' | 'right' }) => {
+    const preparedText = isRTL ? prepareArabicForPDF(text, isRTL) : text
+    const xPosition = isRTL && options?.align !== 'center' ? pageWidth - x : x
+    const alignment = isRTL ? (options?.align === 'left' ? 'right' : options?.align === 'right' ? 'left' : options?.align) : options?.align
+    
+    if (alignment) {
+      doc.text(preparedText, xPosition, y, { align: alignment })
+    } else {
+      doc.text(preparedText, xPosition, y)
+    }
+  }
+
+  doc.setFillColor(primaryRgb[0], primaryRgb[1], primaryRgb[2])
+  doc.rect(0, 0, pageWidth, 45, 'F')
+  doc.setFillColor(accentRgb[0], accentRgb[1], accentRgb[2])
+  doc.rect(0, 40, pageWidth, 5, 'F')
+
+  doc.setTextColor(255, 255, 255)
+  doc.setFontSize(24)
+  doc.setFont('helvetica', 'bold')
+  
+  const title = options.brandName 
+    ? (language === 'ar' ? `قصة المؤسس - ${options.brandName}` : `Founder Story - ${options.brandName}`)
+    : (language === 'ar' ? 'قصة المؤسس' : 'Founder Story')
+  
+  if (isRTL) {
+    addText(title, pageWidth - margin, 25, { align: 'right' })
+  } else {
+    addText(title, margin, 25)
+  }
+
+  if (options.tone) {
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    const toneLabel = language === 'ar' 
+      ? `نمط السرد: ${options.tone === 'empathetic' ? 'عاطفي' : 'علمي'}`
+      : `Narrative Tone: ${options.tone === 'empathetic' ? 'Empathetic' : 'Scientific'}`
+    
+    if (isRTL) {
+      addText(toneLabel, pageWidth - margin, 35, { align: 'right' })
+    } else {
+      addText(toneLabel, margin, 35)
+    }
+  }
+
+  yPosition = 55
+
+  if (options.aiScore) {
+    addNewPageIfNeeded(30)
+    
+    doc.setFillColor(250, 250, 255)
+    doc.rect(margin, yPosition, contentWidth, 25, 'F')
+    
+    doc.setTextColor(60, 60, 80)
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    
+    const scoreLabel = language === 'ar' ? 'تقييم جودة القصة بالذكاء الاصطناعي' : 'AI Story Quality Score'
+    addText(scoreLabel, isRTL ? pageWidth - margin - 5 : margin + 5, yPosition + 7)
+    
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(9)
+    
+    const clarityLabel = language === 'ar' ? 'الوضوح' : 'Clarity'
+    const emotionLabel = language === 'ar' ? 'العاطفة' : 'Emotion'
+    const healthcareLabel = language === 'ar' ? 'الرعاية الصحية' : 'Healthcare'
+    
+    const scoreText = `${clarityLabel}: ${options.aiScore.clarity} • ${emotionLabel}: ${options.aiScore.emotion} • ${healthcareLabel}: ${options.aiScore.healthcare}`
+    addText(scoreText, isRTL ? pageWidth - margin - 5 : margin + 5, yPosition + 16)
+    
+    yPosition += 35
+  }
+
+  doc.setTextColor(40, 40, 40)
+  doc.setFontSize(14)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(primaryRgb[0], primaryRgb[1], primaryRgb[2])
+  
+  const narrativeLabel = language === 'ar' ? 'السرد' : 'Narrative'
+  addText(narrativeLabel, isRTL ? pageWidth - margin : margin, yPosition)
+  yPosition += 10
+
+  doc.setFontSize(11)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(40, 40, 40)
+
+  const storyParagraphs = story.split('\n\n')
+  
+  storyParagraphs.forEach((paragraph, index) => {
+    if (paragraph.trim().length === 0) return
+    
+    addNewPageIfNeeded(20)
+    
+    const wrappedLines = wrapText(paragraph, contentWidth)
+    wrappedLines.forEach((line: string) => {
+      addNewPageIfNeeded(7)
+      addText(line, isRTL ? pageWidth - margin : margin, yPosition)
+      yPosition += 6
+    })
+    
+    if (index < storyParagraphs.length - 1) {
+      yPosition += 5
+    }
+  })
+
+  yPosition += 15
+
+  if (options.targetPatient || options.coreProblem || options.impact || options.solutionVision) {
+    addNewPageIfNeeded(60)
+    
+    doc.setFillColor(245, 245, 250)
+    doc.rect(margin, yPosition, contentWidth, 3, 'F')
+    yPosition += 10
+    
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(primaryRgb[0], primaryRgb[1], primaryRgb[2])
+    
+    const elementsLabel = language === 'ar' ? 'عناصر القصة' : 'Story Elements'
+    addText(elementsLabel, isRTL ? pageWidth - margin : margin, yPosition)
+    yPosition += 10
+    
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(40, 40, 40)
+
+    const elements = [
+      { label: language === 'ar' ? 'المريض المستهدف' : 'Target Patient', value: options.targetPatient },
+      { label: language === 'ar' ? 'المشكلة الأساسية' : 'Core Problem', value: options.coreProblem },
+      { label: language === 'ar' ? 'التأثير الواقعي' : 'Real-world Impact', value: options.impact },
+      { label: language === 'ar' ? 'رؤية الحل' : 'Solution Vision', value: options.solutionVision }
+    ]
+
+    elements.forEach(({ label, value }) => {
+      if (!value) return
+      
+      addNewPageIfNeeded(15)
+      
+      doc.setFont('helvetica', 'bold')
+      addText(`${label}:`, isRTL ? pageWidth - margin : margin, yPosition)
+      yPosition += 5
+      
+      doc.setFont('helvetica', 'normal')
+      const wrappedLines = wrapText(value, contentWidth - 5)
+      wrappedLines.forEach((line: string) => {
+        addNewPageIfNeeded(5)
+        addText(line, isRTL ? pageWidth - margin - 3 : margin + 3, yPosition)
+        yPosition += 5
+      })
+      yPosition += 3
+    })
+  }
+
+  const totalPages = doc.getNumberOfPages()
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i)
+    doc.setFontSize(8)
+    doc.setTextColor(150, 150, 150)
+    doc.setFont('helvetica', 'normal')
+    
+    const pageLabel = language === 'ar' ? 'صفحة' : 'Page'
+    const ofLabel = language === 'ar' ? 'من' : 'of'
+    const storyLabel = language === 'ar' ? 'قصة المؤسس' : 'Founder Story'
+    
+    const footerText = options.brandName 
+      ? `${options.brandName} ${storyLabel} • ${pageLabel} ${i} ${ofLabel} ${totalPages}`
+      : `${storyLabel} • ${pageLabel} ${i} ${ofLabel} ${totalPages}`
+    
+    doc.text(footerText, pageWidth / 2, pageHeight - 10, { align: 'center' })
+  }
+
+  const fileName = options.brandName 
+    ? `${options.brandName.replace(/\s+/g, '-')}-Founder-Story.pdf`
+    : language === 'ar' ? 'قصة-المؤسس.pdf' : 'Founder-Story.pdf'
+  
+  doc.save(fileName)
+}

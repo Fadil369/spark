@@ -4,6 +4,8 @@ import {
   refineConceptWithAI,
   generatePersonalizedStory,
   analyzeStoryQuality,
+  improveStory,
+  translateStory,
   generateBrandNames,
   generateTaglines,
   generatePRDContent
@@ -84,6 +86,14 @@ export class AIHelper {
     healthcare: number
   }> {
     return await analyzeStoryQuality(story)
+  }
+
+  async improveStory(story: string, improvements: string[]): Promise<string> {
+    return await improveStory(story, improvements, this.language)
+  }
+
+  async translateStory(story: string, targetLanguage: Language): Promise<string> {
+    return await translateStory(story, targetLanguage)
   }
 
   async generateBrandName(personality: {

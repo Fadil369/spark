@@ -485,3 +485,45 @@ Be critical but fair. Most good stories score 65-85.`
     healthcare: Math.min(100, Math.max(0, result.healthcare || 70))
   }
 }
+
+export async function improveStory(
+  originalStory: string,
+  improvements: string[],
+  language: 'en' | 'ar'
+): Promise<string> {
+  const languageInstruction = language === 'ar'
+    ? 'Write the improved story in professional Arabic.'
+    : 'Write the improved story in clear, professional English.'
+
+  const improvementsText = improvements.join(', ')
+  
+  const prompt = `Improve this healthcare startup founder story by focusing on: ${improvementsText}
+
+Original Story:
+"${originalStory}"
+
+${languageInstruction}
+
+Create an enhanced version that addresses the improvement areas while maintaining the core message and authenticity. Make it more compelling and engaging.`
+
+  return await callDeepSeek(prompt, 0.7, 2500, false, 'story-improve')
+}
+
+export async function translateStory(
+  story: string,
+  targetLanguage: 'en' | 'ar'
+): Promise<string> {
+  const languageInstruction = targetLanguage === 'ar'
+    ? 'Translate to professional, eloquent Arabic suitable for healthcare business contexts. Maintain the emotional impact and narrative flow.'
+    : 'Translate to clear, professional English. Maintain the emotional impact and narrative flow.'
+
+  const prompt = `Translate this healthcare startup founder story:
+
+"${story}"
+
+${languageInstruction}
+
+Ensure the translation captures the essence, emotion, and professional tone of the original.`
+
+  return await callDeepSeek(prompt, 0.5, 2500, false, 'translate')
+}
