@@ -30,7 +30,7 @@ export function generateRepoDescription(journey: { concept?: { problem: string }
   if (journey.concept?.problem) {
     return journey.concept.problem.slice(0, 200)
   }
-  return 'Healthcare startup project built with HealFounder'
+  return 'Healthcare startup built with Spark الشرارة'
 }
 
 export function generateReadmeContent(journey: {

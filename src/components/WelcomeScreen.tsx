@@ -45,7 +45,7 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
             transition={{ delay: 0.3 }}
             className="text-5xl font-bold font-heading mb-4"
           >
-            {language === 'ar' ? 'مرحباً بك في هيل فاوندر' : 'Welcome to HealFounder'}
+            {language === 'ar' ? 'مرحباً بك في سبارك' : 'Welcome to Spark'}
           </motion.h1>
           
           <motion.p
@@ -55,7 +55,7 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
             className="text-xl text-muted-foreground max-w-2xl mx-auto"
           >
             {language === 'ar' 
-              ? 'رحلتك المُبتكرة لبناء شركة ناشئة في الرعاية الصحية، من الفكرة إلى GitHub بمساعدة الذكاء الاصطناعي'
+              ? 'رحلتك المبتكرة لبناء شركة ناشئة في الرعاية الصحية، من الفكرة إلى GitHub بمساعدة الذكاء الاصطناعي'
               : 'Your gamified journey to build a healthcare startup, from idea to GitHub with AI assistance'}
           </motion.p>
         </div>
