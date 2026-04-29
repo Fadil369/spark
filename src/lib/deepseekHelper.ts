@@ -64,7 +64,7 @@ export async function callDeepSeek(
     try { await rateLimiter.recordRequest() } catch {}
     
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 60000)
+    const timeoutId = setTimeout(() => controller.abort(), 120000)
 
     const response = await fetch(DEEPSEEK_API_URL, {
       signal: controller.signal,
@@ -86,7 +86,7 @@ export async function callDeepSeek(
           }
         ],
         temperature,
-        max_tokens: Math.min(maxTokens, 1500),
+        max_tokens: Math.min(maxTokens, 8000),
         ...(jsonMode && { response_format: { type: 'json_object' } })
       })
     })

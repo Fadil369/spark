@@ -10,17 +10,15 @@ interface WelcomeScreenProps {
 }
 
 export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
-  const { t } = useLanguage()
-  const p = t.phases
-  const w = t.welcome
+  const { language, t } = useLanguage()
 
-  const phaseCards = [
-    { icon: Lightbulb, name: p.brainstorm, desc: w.phaseBrainstorm },
-    { icon: BookOpen, name: p.story, desc: w.phaseStory },
-    { icon: Palette, name: p.brand, desc: w.phaseBrand },
-    { icon: FileText, name: p.prd, desc: w.phasePrd },
-    { icon: Code, name: p.code, desc: w.phaseCode },
-    { icon: GithubLogo, name: p.github, desc: w.phaseGithub },
+  const phases = [
+    { icon: Lightbulb, name: language === 'ar' ? 'العصف الذهني' : 'Brainstorm', desc: language === 'ar' ? 'استكشف أفكار الرعاية الصحية' : 'Explore healthcare ideas' },
+    { icon: BookOpen, name: language === 'ar' ? 'القصة' : 'Story', desc: language === 'ar' ? 'اكتب قصة مؤسسك' : 'Craft your founder story' },
+    { icon: Palette, name: language === 'ar' ? 'العلامة التجارية' : 'Brand', desc: language === 'ar' ? 'صمّم هويتك' : 'Design your identity' },
+    { icon: FileText, name: language === 'ar' ? 'المتطلبات' : 'PRD', desc: language === 'ar' ? 'اكتب المتطلبات' : 'Build requirements' },
+    { icon: Code, name: language === 'ar' ? 'البرمجة' : 'Code', desc: language === 'ar' ? 'ولّد MVP' : 'Generate MVP' },
+    { icon: GithubLogo, name: language === 'ar' ? 'جيت هاب' : 'GitHub', desc: language === 'ar' ? 'انشر مشروعك' : 'Deploy your project' },
   ]
 
   return (
@@ -47,7 +45,7 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
             transition={{ delay: 0.3 }}
             className="text-5xl font-bold font-heading mb-4"
           >
-            {w.title}
+            {language === 'ar' ? 'مرحباً بك في سبارك' : 'Welcome to Spark'}
           </motion.h1>
           
           <motion.p
@@ -56,7 +54,9 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
             transition={{ delay: 0.4 }}
             className="text-xl text-muted-foreground max-w-2xl mx-auto"
           >
-            {w.subtitle}
+            {language === 'ar' 
+              ? 'رحلتك المبتكرة لبناء شركة ناشئة في الرعاية الصحية، من الفكرة إلى GitHub بمساعدة الذكاء الاصطناعي'
+              : 'Your gamified journey to build a healthcare startup, from idea to GitHub with AI assistance'}
           </motion.p>
         </div>
 
@@ -66,7 +66,7 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
           transition={{ delay: 0.5 }}
           className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-12"
         >
-          {phaseCards.map((phase, index) => (
+          {phases.map((phase, index) => (
             <motion.div
               key={phase.name}
               initial={{ opacity: 0, y: 20 }}
@@ -95,25 +95,27 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
           <div className="flex flex-wrap gap-4 justify-center items-center text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-primary"></div>
-              <span>{w.aiPowered}</span>
+              <span>{language === 'ar' ? 'ذكاء اصطناعي مدمج' : 'AI-Powered'}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-primary"></div>
-              <span>{w.gamifiedProgress}</span>
+              <span>{language === 'ar' ? 'نظام المكافآت' : 'Gamified Progress'}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-primary"></div>
-              <span>{w.bilingualSupport}</span>
+              <span>{language === 'ar' ? 'دعم العربية والإنجليزية' : 'Arabic & English'}</span>
             </div>
           </div>
 
           <Button size="lg" onClick={onStart} className="text-lg px-8 py-6 gap-2">
             <SparkLogo className="w-5 h-5" />
-            {w.startJourney}
+            {language === 'ar' ? 'ابدأ رحلتك الآن' : 'Start Your Journey'}
           </Button>
 
           <p className="text-xs text-muted-foreground">
-            {w.autoSave}
+            {language === 'ar' 
+              ? 'سيتم حفظ تقدمك تلقائياً في كل خطوة'
+              : 'Your progress will be automatically saved at each step'}
           </p>
         </motion.div>
       </motion.div>
