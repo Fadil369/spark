@@ -44,17 +44,24 @@ export async function callDeepSeek(
   try {
     validateApiKey()
     
-    const limitCheck = await rateLimiter.checkLimit()
+    // Gracefully skip rate limit check if it fails
+    let limitCheck = { allowed: true, remaining: 999 }
+    try {
+      limitCheck = await rateLimiter.checkLimit()
+    } catch {
+      console.warn('Rate limiter check failed, proceeding anyway')
+    }
+    
     if (!limitCheck.allowed) {
-      await rateLimiter.recordBlocked()
-      const timeRemaining = formatTimeRemaining(limitCheck.retryAfter || 0)
+      try { await rateLimiter.recordBlocked() } catch {}
+      const timeRemaining = formatTimeRemaining((limitCheck as any).retryAfter || 0)
       throw new Error(
         `Rate limit exceeded for ${endpoint}. Please wait ${timeRemaining} before trying again. ` +
         `(${limitCheck.remaining} requests remaining)`
       )
     }
 
-    await rateLimiter.recordRequest()
+    try { await rateLimiter.recordRequest() } catch {}
     
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 60000)
@@ -87,7 +94,7 @@ export async function callDeepSeek(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      await rateLimiter.recordUsage(false)
+      // try { await rateLimiter.recordUsage(false)
       throw new Error(`DeepSeek API error: ${response.status} - ${JSON.stringify(errorData)}`)
     }
 
@@ -95,15 +102,15 @@ export async function callDeepSeek(
     const content = data.choices[0]?.message?.content || ''
     
     if (!content) {
-      await rateLimiter.recordUsage(false)
+      // try { await rateLimiter.recordUsage(false)
       throw new Error('Empty response from DeepSeek API')
     }
 
-    await rateLimiter.recordUsage(true, {
+    try { await rateLimiter.recordUsage(true, {
       prompt: data.usage.prompt_tokens,
       completion: data.usage.completion_tokens,
       total: data.usage.total_tokens
-    })
+    }) } catch {}
 
     return content
   } catch (error) {

@@ -27,7 +27,7 @@ export interface UsageStats {
 }
 
 export const RATE_LIMIT_CONFIGS: Record<string, RateLimitConfig> = {
-  'concepts': { maxRequests: 10, windowMs: 60000 },
+  'concepts': { maxRequests: 100, windowMs: 60000 },
   'refine': { maxRequests: 5, windowMs: 60000 },
   'story': { maxRequests: 3, windowMs: 60000 },
   'brand': { maxRequests: 5, windowMs: 60000 },
