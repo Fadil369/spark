@@ -56,7 +56,11 @@ export async function callDeepSeek(
 
     await rateLimiter.recordRequest()
     
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30000)
+
     const response = await fetch(DEEPSEEK_API_URL, {
+      signal: controller.signal,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -67,7 +71,7 @@ export async function callDeepSeek(
         messages: [
           {
             role: 'system',
-            content: 'You are an expert AI assistant specializing in healthcare technology, startup development, and user experience design. Provide thoughtful, personalized, and actionable insights.'
+            content: 'You are an expert AI assistant specializing in healthcare technology, startup development, and user experience design. Be concise and direct.'
           },
           {
             role: 'user',
@@ -75,10 +79,11 @@ export async function callDeepSeek(
           }
         ],
         temperature,
-        max_tokens: maxTokens,
+        max_tokens: Math.min(maxTokens, 1500),
         ...(jsonMode && { response_format: { type: 'json_object' } })
       })
     })
+    clearTimeout(timeoutId)
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
