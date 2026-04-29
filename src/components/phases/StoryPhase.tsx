@@ -129,7 +129,7 @@ export function StoryPhase({ journey, onComplete }: StoryPhaseProps) {
 
   const handleImproveStory = async () => {
     if (!generatedNarrative || generatedNarrative.trim().length === 0) {
-      toast.error(language === 'ar' ? 'يرجى توليد قصة أولاً' : 'Please generate a story first')
+      toast.error(tt.generateStoryFirst)
       return
     }
 
@@ -167,7 +167,7 @@ export function StoryPhase({ journey, onComplete }: StoryPhaseProps) {
 
   const handleTranslateStory = async () => {
     if (!generatedNarrative || generatedNarrative.trim().length === 0) {
-      toast.error(language === 'ar' ? 'يرجى توليد قصة أولاً' : 'Please generate a story first')
+      toast.error(tt.generateStoryFirst)
       return
     }
 
@@ -199,7 +199,7 @@ export function StoryPhase({ journey, onComplete }: StoryPhaseProps) {
 
   const handleExportPDF = async () => {
     if (!generatedNarrative || generatedNarrative.trim().length === 0) {
-      toast.error(language === 'ar' ? 'يرجى توليد قصة أولاً' : 'Please generate a story first')
+      toast.error(tt.generateStoryFirst)
       return
     }
 

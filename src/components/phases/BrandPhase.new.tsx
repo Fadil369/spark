@@ -32,7 +32,8 @@ export function BrandPhase({ journey, onComplete }: BrandPhaseProps) {
   const [selectedTagline, setSelectedTagline] = useState('')
   const [selectedIcon, setSelectedIcon] = useState('Heart')
   
-  const { language } = useLanguage()
+  const { language, t } = useLanguage()
+  const tt = t.toast
 
   useEffect(() => {
     if (journey.brand) {
@@ -52,7 +53,7 @@ export function BrandPhase({ journey, onComplete }: BrandPhaseProps) {
 
   const generateNames = async () => {
     if (!journey.concept) {
-      toast.error(language === 'ar' ? 'لا يوجد مفهوم. يرجى إكمال العصف الذهني أولاً.' : 'No concept found. Please complete brainstorm first.')
+      toast.error(tt.noConceptFound)
       return
     }
 
@@ -71,9 +72,9 @@ export function BrandPhase({ journey, onComplete }: BrandPhaseProps) {
           }, conceptStr)
       
       setNameOptions(names)
-      toast.success(language === 'ar' ? 'تم توليد الأسماء!' : 'Names generated!')
+      toast.success(tt.namesGenerated)
     } catch (error) {
-      toast.error(language === 'ar' ? 'فشل توليد الأسماء. يرجى المحاولة مجدداً.' : 'Failed to generate names. Please try again.')
+      toast.error(tt.namesFailed)
       console.error(error)
     } finally {
       setIsGenerating(false)
@@ -82,7 +83,7 @@ export function BrandPhase({ journey, onComplete }: BrandPhaseProps) {
 
   const generateTaglines = async () => {
     if (!selectedName) {
-      toast.error(language === 'ar' ? 'يرجى اختيار اسم أولاً' : 'Please select a name first')
+      toast.error(tt.selectNameFirst)
       return
     }
 
@@ -93,9 +94,9 @@ export function BrandPhase({ journey, onComplete }: BrandPhaseProps) {
       
       const taglines = await aiHelper.generateTaglines(selectedName, conceptStr)
       setTaglineOptions(taglines)
-      toast.success(language === 'ar' ? 'تم توليد الشعارات!' : 'Taglines generated!')
+      toast.success(tt.taglinesGenerated)
     } catch (error) {
-      toast.error(language === 'ar' ? 'فشل توليد الشعارات. يرجى المحاولة مجدداً.' : 'Failed to generate taglines. Please try again.')
+      toast.error(tt.taglinesFailed)
       console.error(error)
     } finally {
       setIsGenerating(false)

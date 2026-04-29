@@ -198,6 +198,7 @@ const REGULATORY_CHECKLIST = [
 
 export function PRDPhase({ journey, onComplete }: PRDPhaseProps) {
   const { language, t, isRTL } = useLanguage()
+  const tt = t.toast
   const [activeSection, setActiveSection] = useState<SectionKey>('problem')
   const [sections, setSections] = useState<Record<SectionKey, PRDSection>>({
     problem: { title: 'Problem Statement', content: '', completed: false },
@@ -283,9 +284,9 @@ export function PRDPhase({ journey, onComplete }: PRDPhaseProps) {
       }
       
       handleContentChange(section, content.trim())
-      toast.success(language === 'ar' ? 'تم توليد المحتوى بشخصية علامتك التجارية!' : 'Content generated with your brand personality!')
+      toast.success(tt.contentGenerated)
     } catch (error) {
-      toast.error(language === 'ar' ? 'فشل توليد المحتوى. يرجى المحاولة مجدداً.' : 'Failed to generate content. Please try again.')
+      toast.error(tt.contentFailed)
       console.error(error)
     } finally {
       setIsGenerating(false)
@@ -398,9 +399,9 @@ export function PRDPhase({ journey, onComplete }: PRDPhaseProps) {
         language,
         isRTL
       })
-      toast.success(language === 'ar' ? 'تم تصدير PDF بنجاح!' : 'PDF exported successfully!')
+      toast.success(tt.pdfExported)
     } catch (error) {
-      toast.error(language === 'ar' ? 'فشل تصدير PDF. يرجى المحاولة مجدداً.' : 'Failed to export PDF. Please try again.')
+      toast.error(tt.pdfExportFailed)
       console.error(error)
     }
   }
@@ -419,7 +420,7 @@ export function PRDPhase({ journey, onComplete }: PRDPhaseProps) {
       onComplete(completedJourney)
     }
     
-    toast.success(language === 'ar' ? 'مرحلة وثيقة المتطلبات مكتملة! 🎉' : 'PRD phase complete! 🎉')
+    toast.success(tt.phaseComplete + ' 🎉')
   }
 
   const getCompletenessLabel = () => {

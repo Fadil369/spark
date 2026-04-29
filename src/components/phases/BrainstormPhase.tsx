@@ -51,11 +51,12 @@ export function BrainstormPhase({ journey, onComplete }: BrainstormPhaseProps) {
 
   const { language, t } = useLanguage()
   const bt = t.brainstorm
+  const tt = t.toast
   const healthcareThemes = language === 'ar' ? HEALTHCARE_THEMES_AR : HEALTHCARE_THEMES_EN
 
   const handleGenerateIdeas = async () => {
     if (!input.trim()) {
-      toast.error(language === 'ar' ? 'يرجى إدخال مشكلات أو مواضيع صحية' : 'Please enter some healthcare problems or themes')
+      toast.error(tt.completeAllFields)
       return
     }
 
@@ -65,9 +66,9 @@ export function BrainstormPhase({ journey, onComplete }: BrainstormPhaseProps) {
       const generatedKeywords = await aiHelper.generateHealthcareConcepts(input)
       setKeywords(generatedKeywords)
       setStep('refine')
-      successToast(language === 'ar' ? 'تم توليد المفاهيم الصحية بنجاح!' : 'AI generated related healthcare concepts!')
+      successToast(tt.conceptGenerated)
     } catch (error) {
-      toast.error(language === 'ar' ? 'فشل توليد الأفكار. يرجى المحاولة مجدداً.' : 'Failed to generate ideas. Please try again.')
+      toast.error(tt.conceptFailed)
       console.error(error)
     } finally {
       setIsGenerating(false)
@@ -86,9 +87,9 @@ export function BrainstormPhase({ journey, onComplete }: BrainstormPhaseProps) {
         keywords: [...keywords, input]
       })
       setStep('finalize')
-      successToast(language === 'ar' ? 'تم تحسين المفهوم بنجاح!' : 'Concept refined successfully!')
+      successToast(tt.conceptRefined)
     } catch (error) {
-      toast.error(language === 'ar' ? 'فشل تحسين المفهوم. يرجى المحاولة مجدداً.' : 'Failed to refine concept. Please try again.')
+      toast.error(tt.conceptRefineFailed)
       console.error(error)
     } finally {
       setIsGenerating(false)
@@ -97,7 +98,7 @@ export function BrainstormPhase({ journey, onComplete }: BrainstormPhaseProps) {
 
   const handleComplete = () => {
     if (!concept.problem || !concept.targetUsers || !concept.solution) {
-      toast.error(language === 'ar' ? 'يرجى إكمال جميع حقول المفهوم' : 'Please complete all concept fields')
+      toast.error(tt.completeAllFields)
       return
     }
 

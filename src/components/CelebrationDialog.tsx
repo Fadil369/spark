@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Trophy, Star, ArrowRight } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { SparkLogo } from '@/components/SparkLogo'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface CelebrationDialogProps {
   open: boolean
@@ -63,23 +64,7 @@ export function CelebrationDialog({
     }
   }, [open])
 
-  const labels = language === 'ar'
-    ? {
-        congratulations: 'تهانينا! 🎉',
-        phaseComplete: 'مرحلة مكتملة!',
-        xpEarned: 'نقاط خبرة مكتسبة',
-        badgeUnlocked: 'شارة مفتوحة',
-        continueToNext: 'المتابعة للمرحلة التالية',
-        viewDashboard: 'عرض لوحة التحكم',
-      }
-    : {
-        congratulations: 'Congratulations! 🎉',
-        phaseComplete: 'Phase Complete!',
-        xpEarned: 'XP Earned',
-        badgeUnlocked: 'Badge Unlocked',
-        continueToNext: 'Continue to Next Phase',
-        viewDashboard: 'View Dashboard',
-      }
+  const { t } = useLanguage()
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
@@ -114,10 +99,10 @@ export function CelebrationDialog({
 
           {/* Text */}
           <div className="space-y-1">
-            <h2 className="text-2xl font-bold font-heading">{labels.congratulations}</h2>
+            <h2 className="text-2xl font-bold font-heading">{t.congratulations}</h2>
             <p className="text-muted-foreground">
               <span className="font-semibold text-primary">{phaseName}</span>
-              {' '}{labels.phaseComplete}
+              {' '}{t.phaseComplete}
             </p>
           </div>
 
@@ -125,12 +110,12 @@ export function CelebrationDialog({
           <div className="flex gap-3 justify-center">
             <div className="flex flex-col items-center gap-1 bg-primary/10 rounded-xl px-6 py-3">
               <span className="text-3xl font-bold text-primary">+{xpEarned}</span>
-              <span className="text-xs text-muted-foreground">{labels.xpEarned}</span>
+              <span className="text-xs text-muted-foreground">{t.xpEarned}</span>
             </div>
             {badgeName && (
               <div className="flex flex-col items-center gap-1 bg-yellow-500/10 rounded-xl px-6 py-3">
                 <Trophy weight="fill" className="w-8 h-8 text-yellow-500" />
-                <span className="text-xs text-muted-foreground">{labels.badgeUnlocked}</span>
+                <span className="text-xs text-muted-foreground">{t.badgeUnlocked}</span>
               </div>
             )}
           </div>
@@ -139,12 +124,12 @@ export function CelebrationDialog({
           <div className="flex flex-col gap-2">
             {onContinue && (
               <Button onClick={onContinue} className="w-full">
-                {labels.continueToNext}
+                {t.continueToNext}
                 <ArrowRight className={cn('w-4 h-4', isRTL ? 'mr-2 rotate-180' : 'ml-2')} weight="bold" />
               </Button>
             )}
             <Button variant="outline" onClick={onClose} className="w-full">
-              {labels.viewDashboard}
+              {t.viewDashboard}
             </Button>
           </div>
         </div>
