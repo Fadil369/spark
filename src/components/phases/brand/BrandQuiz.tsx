@@ -6,6 +6,7 @@ import { Brain } from '@phosphor-icons/react'
 import { BrandPersonality } from '@/lib/types'
 import { toast } from 'sonner'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { createAIHelper } from '@/lib/aiHelper'
 
 interface BrandQuizProps {
   onComplete: (personality: BrandPersonality) => void
@@ -103,7 +104,9 @@ export function BrandQuiz({ onComplete, conceptData }: BrandQuizProps) {
     setIsAnalyzing(true)
     
     try {
-      const prompt = window.spark.llmPrompt`You are a brand personality expert specializing in healthcare startups. Analyze these quiz responses and create a detailed brand personality profile:
+      const aiHelper = createAIHelper('en')
+      
+      const prompt = `You are a brand personality expert specializing in healthcare startups. Analyze these quiz responses and create a detailed brand personality profile:
 
 Quiz Responses:
 ${Object.entries(quizAnswers).map(([key, value]) => `${key}: ${value}`).join('\n')}
@@ -121,9 +124,11 @@ Generate a JSON object with:
 - colorPreference: Recommended color direction ("cool-calming", "warm-energetic", "natural-balanced", or "vibrant-modern")
 - styleDirection: Recommended visual style ("medical-clinical", "tech-modern", "warm-human", or "bold-distinctive")
 
-Base your recommendations on the quiz responses and ensure they align with healthcare credibility.`
+Base your recommendations on the quiz responses and ensure they align with healthcare credibility.
+
+Return ONLY valid JSON.`
       
-      const response = await window.spark.llm(prompt, 'gpt-4o', true)
+      const response = await aiHelper.generateBrandPersonality(prompt)
       const personality = JSON.parse(response)
       
       toast.success(bt.personalityAnalyzed)

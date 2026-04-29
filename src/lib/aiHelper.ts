@@ -8,7 +8,8 @@ import {
   translateStory,
   generateBrandNames,
   generateTaglines,
-  generatePRDContent
+  generatePRDContent,
+  callDeepSeek
 } from './deepseekHelper'
 
 export interface AIHelperOptions {
@@ -103,6 +104,14 @@ export class AIHelper {
     targetFeeling: string
   }, concept: string): Promise<string[]> {
     return await generateBrandNames(personality, concept, this.language)
+  }
+
+  async generateBrandPersonality(prompt: string): Promise<string> {
+    return await callDeepSeek(prompt, 0.7, 2000, true, 'brand')
+  }
+
+  async callLLM(prompt: string, jsonMode: boolean = false): Promise<string> {
+    return await callDeepSeek(prompt, 0.7, 2000, jsonMode, 'default')
   }
 
   async generateTaglines(brandName: string, concept: string): Promise<string[]> {

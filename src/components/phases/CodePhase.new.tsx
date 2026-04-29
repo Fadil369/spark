@@ -11,6 +11,7 @@ import { completePhase } from '@/lib/game'
 import { LiveCodePreview } from '@/components/LiveCodePreview'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { getFrameworkBestPractices, getTemplateArchitecture, type FrameworkType, type TemplateType } from '@/lib/frameworkBestPractices'
+import { callDeepSeek } from '@/lib/deepseekHelper'
 
 interface CodePhaseProps {
   journey: Journey
@@ -47,6 +48,23 @@ function safeJsonParse(response: string): GeneratedFilesResponse {
       ? 'The AI response was likely truncated (hit output token limit).'
       : 'The AI response was not valid JSON.'
     throw new SyntaxError(`JSON parse failed – ${hint} Raw error: ${msg}`)
+  }
+}
+
+// Polyfill window.spark for the existing codebase that depends on it
+if (typeof window !== 'undefined' && !window.spark) {
+  ;(window as any).spark = {
+    llm: async (prompt: string, model?: string, jsonMode?: boolean) => {
+      return await callDeepSeek(prompt, 0.7, 4096, jsonMode ?? false, 'code-generate')
+    },
+    llmPrompt: ((strings: TemplateStringsArray, ...values: any[]) => {
+      let result = ''
+      strings.forEach((str, i) => {
+        result += str
+        if (i < values.length) result += values[i]
+      })
+      return result
+    }) as any
   }
 }
 
@@ -151,7 +169,7 @@ export function CodePhase({ journey, onComplete }: CodePhaseProps) {
 
     setIsGenerating(true)
     try {
-      const prompt = window.spark.llmPrompt`You are a healthcare tech architect. Analyze this PRD and provide intelligent code generation recommendations:
+      const prompt = `You are a healthcare tech architect. Analyze this PRD and provide intelligent code generation recommendations:
 
 Brand: ${journey.brand.name}
 Brand Personality: ${journey.brand.personality ? `${journey.brand.personality.archetype} - ${journey.brand.personality.tone.join(', ')}` : 'Not specified'}
@@ -173,7 +191,7 @@ Generate a JSON object with:
 
 Be specific to this healthcare context, template type, and chosen framework.`
 
-      const response = await window.spark.llm(prompt, 'gpt-4o', true)
+      const response = await callDeepSeek(prompt, 0.7, 4096, true, 'code-generate')
       const insights = JSON.parse(response)
       
       const normalizeArray = (arr: any[]): string[] => {
@@ -208,7 +226,7 @@ Be specific to this healthcare context, template type, and chosen framework.`
     try {
       const codeContent = generatedCode.files.map(f => `// ${f.path}\n${f.content.slice(0, 1000)}`).join('\n\n')
       
-      const prompt = window.spark.llmPrompt`You are a code quality expert specializing in healthcare applications. Analyze this generated code and provide a comprehensive quality assessment:
+      const prompt = `You are a code quality expert specializing in healthcare applications. Analyze this generated code and provide a comprehensive quality assessment:
 
 Template: ${selectedTemplate}
 Framework: ${selectedFramework}
@@ -235,7 +253,7 @@ Generate a JSON object with:
 
 Be specific and actionable in your analysis.`
 
-      const response = await window.spark.llm(prompt, 'gpt-4o', true)
+      const response = await callDeepSeek(prompt, 0.7, 4096, true, 'code-generate')
       const analysis = JSON.parse(response)
       
       const normalizeArray = (arr: any[]): string[] => {
@@ -303,7 +321,7 @@ Priority Features: ${selectedFeatures.join(', ')}` : ''
           ? 'sidebar navigation, top bar, dashboard metrics, and interactive sections'
           : 'sidebar menu, KPI cards, data table, chart area, and activity feed'
 
-        const prompt = window.spark.llmPrompt`You are a ${frameworkGuide.name} engineer building a healthcare ${selectedTemplate}. Generate production-ready code.
+        const prompt = `You are a ${frameworkGuide.name} engineer building a healthcare ${selectedTemplate}. Generate production-ready code.
 
 FRAMEWORK: ${frameworkGuide.name}
 FILE STRUCTURE: ${templateGuide.fileStructure[selectedFramework as FrameworkType].join(', ')}
@@ -337,7 +355,7 @@ OUTPUT: Return ONLY a JSON object – no markdown fences, no extra text – with
 {"files":[{"path":"<filename>","content":"<complete file content>"}]}
 Limit to ${MAX_GENERATED_FILES} files maximum to keep the response concise.`
 
-        const response = await window.spark.llm(prompt, 'gpt-4o', true)
+        const response = await callDeepSeek(prompt, 0.7, 4096, true, 'code-generate')
         const result = safeJsonParse(response)
 
         if (!result.files || !Array.isArray(result.files) || result.files.length === 0) {
@@ -420,7 +438,7 @@ Limit to ${MAX_GENERATED_FILES} files maximum to keep the response concise.`
 
     setIsGenerating(true)
     try {
-      const prompt = window.spark.llmPrompt`You are enhancing existing healthcare web code. 
+      const prompt = `You are enhancing existing healthcare web code. 
 
 Current code files:
 ${generatedCode.files.map(f => `${f.path}:\n${f.content.slice(0, 500)}`).join('\n\n')}
@@ -434,7 +452,7 @@ Return ONLY a JSON object – no markdown fences, no extra text – with this ex
 {"files":[{"path":"<filename>","content":"<complete enhanced file content>"}]}
 Include only files that need to change. Make the enhancement production-ready and well-integrated.`
 
-      const response = await window.spark.llm(prompt, 'gpt-4o', true)
+      const response = await callDeepSeek(prompt, 0.7, 4096, true, 'code-generate')
       const result = safeJsonParse(response)
 
       const updatedFiles = generatedCode.files.map(existingFile => {

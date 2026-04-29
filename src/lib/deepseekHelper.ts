@@ -32,7 +32,7 @@ export interface DeepSeekResponse {
   }
 }
 
-async function callDeepSeek(
+export async function callDeepSeek(
   prompt: string,
   temperature: number = 0.7,
   maxTokens: number = 2000,
