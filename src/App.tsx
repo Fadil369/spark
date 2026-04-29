@@ -93,7 +93,10 @@ function App() {
   }
 
   const handlePhaseComplete = (updatedJourney: Journey) => {
-    const completedPhase = journey.currentPhase
+    // Use the route phase to determine the actual phase being completed,
+    // since journey.currentPhase may be stale if the user navigated
+    // directly via URL hash instead of through handlePhaseSelect.
+    const completedPhase = route.view === 'phase' ? route.phase : journey.currentPhase
     const config = PHASE_CONFIG[completedPhase]
     setJourney(updatedJourney)
     setCelebration({
@@ -110,13 +113,17 @@ function App() {
   }
 
   const handleCelebrationContinue = () => {
+    const nextPhase = celebration.nextPhase
     setCelebration((prev) => ({ ...prev, open: false }))
-    if (celebration.nextPhase && journey.phases[celebration.nextPhase]?.unlocked) {
+    if (nextPhase) {
+      // Navigate directly to the next phase — completePhase already unlocked it
+      // in the updated journey. Use the celebration state which was set at the
+      // moment of completion (not stale).
       setJourney((current) => {
         if (!current) return createNewJourney()
-        return { ...current, currentPhase: celebration.nextPhase! }
+        return { ...current, currentPhase: nextPhase }
       })
-      navigate({ view: 'phase', phase: celebration.nextPhase })
+      navigate({ view: 'phase', phase: nextPhase })
     } else {
       navigate({ view: 'dashboard' })
     }
