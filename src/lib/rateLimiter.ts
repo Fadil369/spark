@@ -1,5 +1,4 @@
-import { useKV } from '@github/spark/hooks'
-
+// Lightweight in-memory + localStorage rate limiter (no GitHub Spark dependency)
 export interface RateLimitConfig {
   maxRequests: number
   windowMs: number
@@ -81,19 +80,17 @@ export class RateLimiter {
     const state = await this.getState()
     const now = Date.now()
 
-    if (now >= state.resetAt) {
-      await spark.kv.set(this.storageKey, {
-        count: 1,
-        resetAt: now + this.config.windowMs,
-        blocked: false
-      })
-    } else {
-      await spark.kv.set(this.storageKey, {
-        count: state.count + 1,
-        resetAt: state.resetAt,
-        blocked: state.count + 1 >= this.config.maxRequests
-      })
-    }
+    const newState: RateLimitState = now >= state.resetAt
+      ? { count: 1, resetAt: now + this.config.windowMs, blocked: false }
+      : {
+          count: state.count + 1,
+          resetAt: state.resetAt,
+          blocked: state.count + 1 >= this.config.maxRequests
+        }
+
+    try {
+      localStorage.setItem(this.storageKey, JSON.stringify(newState))
+    } catch {}
   }
 
   async recordUsage(
@@ -123,56 +120,66 @@ export class RateLimiter {
         stats.costEstimate
     }
 
-    await spark.kv.set(this.usageKey, updatedStats)
+    try {
+      localStorage.setItem(this.usageKey, JSON.stringify(updatedStats))
+    } catch {}
   }
 
   async recordBlocked(): Promise<void> {
     const stats = await this.getUsageStats()
-    await spark.kv.set(this.usageKey, {
-      ...stats,
-      blockedCalls: stats.blockedCalls + 1
-    })
+    const updated = { ...stats, blockedCalls: stats.blockedCalls + 1 }
+    try {
+      localStorage.setItem(this.usageKey, JSON.stringify(updated))
+    } catch {}
   }
 
   private async getState(): Promise<RateLimitState> {
-    const state = await spark.kv.get<RateLimitState>(this.storageKey)
-    if (!state) {
-      return {
-        count: 0,
-        resetAt: Date.now() + this.config.windowMs,
-        blocked: false
+    try {
+      const raw = localStorage.getItem(this.storageKey)
+      if (raw) {
+        const state = JSON.parse(raw) as RateLimitState
+        if (state && typeof state.count === 'number') return state
       }
-    }
-    return state
-  }
-
-  private async resetState(): Promise<void> {
-    await spark.kv.set(this.storageKey, {
+    } catch {}
+    return {
       count: 0,
       resetAt: Date.now() + this.config.windowMs,
       blocked: false
-    })
+    }
+  }
+
+  private async resetState(): Promise<void> {
+    try {
+      localStorage.setItem(this.storageKey, JSON.stringify({
+        count: 0,
+        resetAt: Date.now() + this.config.windowMs,
+        blocked: false
+      }))
+    } catch {}
   }
 
   async getUsageStats(): Promise<UsageStats> {
-    const stats = await spark.kv.get<UsageStats>(this.usageKey)
-    if (!stats) {
-      return {
-        totalCalls: 0,
-        successfulCalls: 0,
-        failedCalls: 0,
-        blockedCalls: 0,
-        lastCallAt: 0,
-        callsByEndpoint: {},
-        tokenUsage: {
-          promptTokens: 0,
-          completionTokens: 0,
-          totalTokens: 0
-        },
-        costEstimate: 0
+    try {
+      const raw = localStorage.getItem(this.usageKey)
+      if (raw) {
+        const stats = JSON.parse(raw) as UsageStats
+        if (stats) return stats
       }
+    } catch {}
+    return {
+      totalCalls: 0,
+      successfulCalls: 0,
+      failedCalls: 0,
+      blockedCalls: 0,
+      lastCallAt: 0,
+      callsByEndpoint: {},
+      tokenUsage: {
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0
+      },
+      costEstimate: 0
     }
-    return stats
   }
 
   private calculateCost(promptTokens: number, completionTokens: number): number {
@@ -195,61 +202,61 @@ export class RateLimiter {
   }
 
   async clearStats(): Promise<void> {
-    await spark.kv.delete(this.storageKey)
-    await spark.kv.delete(this.usageKey)
+    try {
+      localStorage.removeItem(this.storageKey)
+      localStorage.removeItem(this.usageKey)
+    } catch {}
   }
 }
 
 export async function getGlobalUsageStats(): Promise<UsageStats> {
-  const allKeys = await spark.kv.keys()
-  const usageKeys = allKeys.filter(key => key.startsWith('usage-stats-'))
-  
-  let globalStats: UsageStats = {
-    totalCalls: 0,
-    successfulCalls: 0,
-    failedCalls: 0,
-    blockedCalls: 0,
-    lastCallAt: 0,
+  const aggregated: UsageStats = {
+    totalCalls: 0, successfulCalls: 0, failedCalls: 0, blockedCalls: 0, lastCallAt: 0,
     callsByEndpoint: {},
-    tokenUsage: {
-      promptTokens: 0,
-      completionTokens: 0,
-      totalTokens: 0
-    },
+    tokenUsage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
     costEstimate: 0
   }
 
-  for (const key of usageKeys) {
-    const stats = await spark.kv.get<UsageStats>(key)
-    if (stats) {
-      globalStats.totalCalls += stats.totalCalls
-      globalStats.successfulCalls += stats.successfulCalls
-      globalStats.failedCalls += stats.failedCalls
-      globalStats.blockedCalls += stats.blockedCalls
-      globalStats.lastCallAt = Math.max(globalStats.lastCallAt, stats.lastCallAt)
-      globalStats.tokenUsage.promptTokens += stats.tokenUsage.promptTokens
-      globalStats.tokenUsage.completionTokens += stats.tokenUsage.completionTokens
-      globalStats.tokenUsage.totalTokens += stats.tokenUsage.totalTokens
-      globalStats.costEstimate += stats.costEstimate
-
-      Object.entries(stats.callsByEndpoint).forEach(([endpoint, count]) => {
-        globalStats.callsByEndpoint[endpoint] = (globalStats.callsByEndpoint[endpoint] || 0) + count
-      })
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && key.startsWith('usage-stats-')) {
+        const raw = localStorage.getItem(key)
+        if (raw) {
+          const stats = JSON.parse(raw) as UsageStats
+          if (stats) {
+            aggregated.totalCalls += stats.totalCalls
+            aggregated.successfulCalls += stats.successfulCalls
+            aggregated.failedCalls += stats.failedCalls
+            aggregated.blockedCalls += stats.blockedCalls
+            aggregated.lastCallAt = Math.max(aggregated.lastCallAt, stats.lastCallAt)
+            aggregated.tokenUsage.promptTokens += stats.tokenUsage.promptTokens
+            aggregated.tokenUsage.completionTokens += stats.tokenUsage.completionTokens
+            aggregated.tokenUsage.totalTokens += stats.tokenUsage.totalTokens
+            aggregated.costEstimate += stats.costEstimate
+            Object.entries(stats.callsByEndpoint).forEach(([e, c]) => {
+              aggregated.callsByEndpoint[e] = (aggregated.callsByEndpoint[e] || 0) + c
+            })
+          }
+        }
+      }
     }
-  }
+  } catch {}
 
-  return globalStats
+  return aggregated
 }
 
 export async function clearAllRateLimits(): Promise<void> {
-  const allKeys = await spark.kv.keys()
-  const rateLimitKeys = allKeys.filter(key => 
-    key.startsWith('rate-limit-') || key.startsWith('usage-stats-')
-  )
-  
-  for (const key of rateLimitKeys) {
-    await spark.kv.delete(key)
-  }
+  try {
+    const toRemove: string[] = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && (key.startsWith('rate-limit-') || key.startsWith('usage-stats-'))) {
+        toRemove.push(key)
+      }
+    }
+    toRemove.forEach(key => localStorage.removeItem(key))
+  } catch {}
 }
 
 export function formatTimeRemaining(ms: number): string {
