@@ -52,7 +52,7 @@ export function StoryPhase({ journey, onComplete }: StoryPhaseProps) {
 
   const handleGenerateNarrative = async () => {
     if (!formData.targetPatient || !formData.coreProblem || !formData.impact || !formData.solutionVision) {
-      toast.error(language === 'ar' ? 'يرجى ملء جميع الحقول قبل التوليد' : 'Please fill in all fields before generating')
+      toast.error(tt.fillAllFields)
       return
     }
 
@@ -80,10 +80,10 @@ export function StoryPhase({ journey, onComplete }: StoryPhaseProps) {
       await scoreNarrative(narrative)
       
       setStep('review')
-      toast.success(language === 'ar' ? 'تم توليد قصة المؤسس!' : 'Your founder story has been generated!')
+      toast.success(tt.storyGenerated)
     } catch (error: any) {
       const errorMessage = error?.message || 'Unknown error occurred'
-      toast.error(language === 'ar' ? `فشل توليد القصة: ${errorMessage}` : `Story generation failed: ${errorMessage}`)
+      toast.error(`${tt.storyFailed}: ${errorMessage}`)
       console.error('[Story Generation Error]', {
         error: errorMessage,
         formData,
@@ -124,7 +124,7 @@ export function StoryPhase({ journey, onComplete }: StoryPhaseProps) {
       onComplete(completedJourney)
     }
     
-    successToast(language === 'ar' ? 'مرحلة القصة مكتملة! 🎉' : 'Story phase complete! 🎉')
+    successToast(tt.phaseComplete + ' 🎉')
   }
 
   const handleImproveStory = async () => {
@@ -155,7 +155,7 @@ export function StoryPhase({ journey, onComplete }: StoryPhaseProps) {
       successToast(st.storyImproved)
     } catch (error: any) {
       const errorMessage = error?.message || 'Unknown error occurred'
-      toast.error(language === 'ar' ? `فشل تحسين القصة: ${errorMessage}` : `Story improvement failed: ${errorMessage}`)
+      toast.error(`${tt.storyImproveFailed}: ${errorMessage}`)
       console.error('[Story Improvement Error]', {
         error: errorMessage,
         timestamp: new Date().toISOString()
@@ -187,7 +187,7 @@ export function StoryPhase({ journey, onComplete }: StoryPhaseProps) {
       successToast(st.storyTranslated)
     } catch (error: any) {
       const errorMessage = error?.message || 'Unknown error occurred'
-      toast.error(language === 'ar' ? `فشلت الترجمة: ${errorMessage}` : `Translation failed: ${errorMessage}`)
+      toast.error(`${tt.storyTranslateFailed}: ${errorMessage}`)
       console.error('[Story Translation Error]', {
         error: errorMessage,
         timestamp: new Date().toISOString()
@@ -471,11 +471,9 @@ export function StoryPhase({ journey, onComplete }: StoryPhaseProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle>{language === 'ar' ? 'أدوات إضافية' : 'Additional Tools'}</CardTitle>
+              <CardTitle>{st.additionalTools}</CardTitle>
               <CardDescription>
-                {language === 'ar' 
-                  ? 'تحسين أو ترجمة أو تصدير قصتك' 
-                  : 'Improve, translate, or export your story'}
+                {st.additionalToolsDesc}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Sparkle } from '@phosphor-icons/react'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 const HEALTHCARE_FACTS_EN = [
   'Over 125,000 deaths annually are attributed to medication non-adherence.',
@@ -34,6 +35,7 @@ interface AILoadingScreenProps {
 }
 
 export function AILoadingScreen({ isVisible, language = 'en', message }: AILoadingScreenProps) {
+  const { t } = useLanguage()
   const facts = language === 'ar' ? HEALTHCARE_FACTS_AR : HEALTHCARE_FACTS_EN
   const [currentFactIndex, setCurrentFactIndex] = useState(() => Math.floor(Math.random() * facts.length))
   const [fade, setFade] = useState(true)
@@ -53,6 +55,7 @@ export function AILoadingScreen({ isVisible, language = 'en', message }: AILoadi
   if (!isVisible) return null
 
   const defaultMessage = language === 'ar' ? 'الذكاء الاصطناعي يعمل...' : 'AI is working its magic...'
+  const didYouKnow = language === 'ar' ? 'هل تعلم؟' : 'Did You Know?'
 
   return (
     <div className="flex flex-col items-center justify-center gap-6 py-16 px-4 text-center animate-in fade-in duration-300">
@@ -78,7 +81,7 @@ export function AILoadingScreen({ isVisible, language = 'en', message }: AILoadi
 
       <div className="max-w-md">
         <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wider">
-          {language === 'ar' ? 'هل تعلم؟' : 'Did You Know?'}
+          {didYouKnow}
         </p>
         <p
           className="text-sm text-muted-foreground italic leading-relaxed transition-opacity duration-400"

@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import { successToast } from '@/lib/toastWithLogo'
 import { completePhase } from '@/lib/game'
 import { LiveCodePreview } from '@/components/LiveCodePreview'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { getFrameworkBestPractices, getTemplateArchitecture, type FrameworkType, type TemplateType } from '@/lib/frameworkBestPractices'
 
 interface CodePhaseProps {
@@ -50,6 +51,8 @@ function safeJsonParse(response: string): GeneratedFilesResponse {
 }
 
 export function CodePhase({ journey, onComplete }: CodePhaseProps) {
+  const { t } = useLanguage()
+  const tt = t.toast
   const [step, setStep] = useState<'template' | 'customize' | 'generating' | 'preview' | 'enhance' | 'analyze'>('template')
   const [selectedTemplate, setSelectedTemplate] = useState<'landing' | 'webapp' | 'dashboard'>('landing')
   const [selectedFramework, setSelectedFramework] = useState<'html' | 'react' | 'vue'>('html')
@@ -448,9 +451,9 @@ Include only files that need to change. Make the enhancement production-ready an
         files: [...updatedFiles, ...newFiles]
       })
 
-      toast.success('Code enhanced successfully!')
+      toast.success(tt.codeEnhanced)
     } catch (error) {
-      toast.error('Failed to enhance code. Please try again.')
+      toast.error(tt.codeEnhanceFailed)
       console.error(error)
     } finally {
       setIsGenerating(false)

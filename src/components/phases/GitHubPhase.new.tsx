@@ -25,6 +25,7 @@ export function GitHubPhase({ journey, onComplete }: GitHubPhaseProps) {
   const [includeDocker, setIncludeDocker] = useState(true)
   const [includeCICD, setIncludeCICD] = useState(true)
   const { t } = useLanguage()
+  const tt = t.toast
 
   useEffect(() => {
     if (journey.githubRepo) {
@@ -41,7 +42,7 @@ export function GitHubPhase({ journey, onComplete }: GitHubPhaseProps) {
 
   const handleCreateRepo = async () => {
     if (!journey.code || !repoName.trim()) {
-      toast.error('Repository name is required')
+      toast.error(tt.repoNameRequired)
       return
     }
 
@@ -107,10 +108,10 @@ export function GitHubPhase({ journey, onComplete }: GitHubPhaseProps) {
       }
 
       setStep('success')
-      toast.success('🎉 Repository created successfully!')
+      toast.success(tt.repoCreated)
     } catch (err: any) {
       setError(err.message || 'Failed to create repository')
-      toast.error(err.message || 'Failed to create repository')
+      toast.error(err.message || tt.repoFailed)
       setStep('deployment-options')
     } finally {
       setIsCreating(false)
@@ -215,7 +216,7 @@ export function GitHubPhase({ journey, onComplete }: GitHubPhaseProps) {
                             a.download = file.path
                             a.click()
                             URL.revokeObjectURL(url)
-                            toast.success(`Downloaded ${file.path}`)
+                            toast.success(`${tt.fileDownloaded} ${file.path}`)
                           }}
                         >
                           {file.path}

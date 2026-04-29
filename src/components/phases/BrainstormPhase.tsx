@@ -126,8 +126,8 @@ export function BrainstormPhase({ journey, onComplete }: BrainstormPhaseProps) {
               isVisible={true}
               language={language}
               message={step === 'input'
-                ? (language === 'ar' ? 'جارٍ توليد المفاهيم...' : 'Generating concepts...')
-                : (language === 'ar' ? 'جارٍ تحسين المفهوم...' : 'Refining your concept...')}
+                ? (language === 'ar' ? bt.generating : 'Generating concepts...')
+                : (language === 'ar' ? bt.refining : 'Refining your concept...')}
             />
           </CardContent>
         </Card>
