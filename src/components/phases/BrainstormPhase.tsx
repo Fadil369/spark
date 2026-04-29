@@ -68,8 +68,9 @@ export function BrainstormPhase({ journey, onComplete }: BrainstormPhaseProps) {
       setStep('refine')
       successToast(tt.conceptGenerated)
     } catch (error) {
-      toast.error(tt.conceptFailed)
-      console.error(error)
+      const msg = error instanceof Error ? error.message : String(error)
+      toast.error(`${tt.conceptFailed}: ${msg}`)
+      console.error('Generate ideas error:', error)
     } finally {
       setIsGenerating(false)
     }

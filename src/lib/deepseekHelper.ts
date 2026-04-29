@@ -57,7 +57,7 @@ export async function callDeepSeek(
     await rateLimiter.recordRequest()
     
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 30000)
+    const timeoutId = setTimeout(() => controller.abort(), 60000)
 
     const response = await fetch(DEEPSEEK_API_URL, {
       signal: controller.signal,
@@ -107,8 +107,10 @@ export async function callDeepSeek(
 
     return content
   } catch (error) {
-    console.error('DeepSeek API call failed:', error)
-    throw error
+    const isAbort = error instanceof DOMException && error.name === 'AbortError'
+    const errMsg = isAbort ? 'Request timed out after 60s' : (error instanceof Error ? error.message : String(error))
+    console.error('DeepSeek API call failed:', errMsg)
+    throw new Error(`${isAbort ? 'Timeout' : 'API Error'}: ${errMsg}`)
   }
 }
 
